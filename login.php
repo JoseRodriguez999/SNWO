@@ -11,6 +11,7 @@ $controller = new AuthController();
 $resultado  = $controller->manejar();
 
 $error = $resultado['error'];
+$exito = $resultado['exito'];
 $csrf  = $resultado['csrf'];
 
 require __DIR__ . '/views/login_view.php';

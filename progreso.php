@@ -7,7 +7,7 @@ $datos      = $controller->manejar();
 
 if ($datos['paciente'] === null) {
     $pageTitle = 'Progreso';
-    $activeNav = 'pacientes';
+    $activeNav = 'progreso';
     include __DIR__ . '/includes/header.php';
     echo '<div class="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
             No se encontró el paciente indicado. <a href="pacientes.php" class="underline font-medium">Volver a pacientes</a>.

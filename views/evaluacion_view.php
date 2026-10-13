@@ -23,9 +23,18 @@ $habitos   = $datosCompletos['habitos'] ?? null;
   <?php if ($resultado): ?>
     <!-- ================= VISTA DE RESULTADOS ================= -->
     <div class="p-5">
-      <div class="rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3 mb-6">
-        ✓ Evaluación registrada correctamente y guardada en el expediente del paciente.
-      </div>
+      <?php if ($esNueva): ?>
+        <div class="rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3 mb-6">
+          ✓ Evaluación registrada correctamente y guardada en el expediente del paciente.
+        </div>
+      <?php else:
+          $tFecha = strtotime((string)$resultado['fecha_evaluacion']); ?>
+        <div class="rounded-lg bg-gray-50 border border-gray-200 text-gray-600 text-sm px-4 py-3 mb-6 flex items-center justify-between flex-wrap gap-2">
+          <span>Evaluación del <strong><?= $tFecha ? date('d/m/Y \a \l\a\s H:i', $tFecha) : '—' ?></strong>
+            · <?= htmlspecialchars((string)$resultado['formula_utilizada'], ENT_QUOTES, 'UTF-8') ?></span>
+          <a href="historial.php?id=<?= $idPaciente ?>" class="brand-text font-medium hover:underline">← Volver al historial</a>
+        </div>
+      <?php endif; ?>
 
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div class="rounded-xl border border-gray-200 p-4 text-center">
@@ -45,6 +54,13 @@ $habitos   = $datosCompletos['habitos'] ?? null;
           <p class="text-2xl font-bold text-gray-900"><?= number_format((float)$resultado['masa_magra_kg'], 1) ?> kg</p>
         </div>
       </div>
+
+      <?php if (!empty($resultado['observaciones'])): ?>
+        <div class="rounded-lg border border-gray-200 px-4 py-3 mb-8 text-sm">
+          <span class="text-gray-500">Observaciones clínicas: </span>
+          <span class="text-gray-800"><?= nl2br(htmlspecialchars((string)$resultado['observaciones'], ENT_QUOTES, 'UTF-8')) ?></span>
+        </div>
+      <?php endif; ?>
 
       <?php if ($circun): ?>
       <h2 class="font-semibold text-gray-800 mb-3">Circunferencias corporales</h2>
@@ -91,8 +107,11 @@ $habitos   = $datosCompletos['habitos'] ?? null;
       <?php endif; ?>
 
       <div class="flex gap-3 flex-wrap">
-        <a href="progreso.php?id=<?= $idPaciente ?>" class="border border-emerald-300 bg-emerald-50 brand-text text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-emerald-100">Ver progreso</a>
-        <a href="generador.php?paciente=<?= urlencode($paciente['nombre']) ?>" class="brand-bg text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:opacity-90">Generar plan con este GET</a>
+        <?php if ($esNueva): ?>
+          <a href="generador.php?id=<?= $idPaciente ?>" class="brand-bg text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:opacity-90">Generar plan con este GET</a>
+        <?php endif; ?>
+        <a href="historial.php?id=<?= $idPaciente ?>" class="border border-emerald-300 bg-emerald-50 brand-text text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-emerald-100">Ver historial</a>
+        <a href="progreso.php?id=<?= $idPaciente ?>" class="border border-gray-300 text-gray-700 text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-gray-50">Ver progreso</a>
         <a href="evaluacion.php?id=<?= $idPaciente ?>" class="border border-gray-300 text-gray-700 text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-gray-50">Nueva evaluación</a>
         <a href="pacientes.php" class="border border-gray-300 text-gray-700 text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-gray-50">Volver a pacientes</a>
       </div>
@@ -100,23 +119,53 @@ $habitos   = $datosCompletos['habitos'] ?? null;
 
   <?php else: ?>
     <!-- ================= FORMULARIO DE MEDICIONES ================= -->
-    <form method="POST" action="evaluacion.php?id=<?= $idPaciente ?>" class="p-5 space-y-8">
+    <form method="POST" action="evaluacion.php?id=<?= $idPaciente ?>" class="p-5 space-y-8"
+          x-data="{ unidadPeso: 'kg', unidadLongitud: 'cm' }">
       <input type="hidden" name="accion" value="registrar_evaluacion">
       <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
+      <input type="hidden" name="unidad_peso" :value="unidadPeso">
+      <input type="hidden" name="unidad_longitud" :value="unidadLongitud">
 
       <?php if ($error): ?>
         <div class="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
       <?php endif; ?>
 
+      <!-- Selector de sistema de unidades -->
+      <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-wrap items-center gap-6">
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-medium text-gray-700">Peso en:</span>
+          <div class="flex rounded-md border border-gray-300 overflow-hidden text-sm">
+            <button type="button" @click="unidadPeso = 'kg'"
+                    :class="unidadPeso === 'kg' ? 'brand-bg text-white' : 'bg-white text-gray-600 hover:bg-gray-50'"
+                    class="px-3 py-1.5">kg</button>
+            <button type="button" @click="unidadPeso = 'lb'"
+                    :class="unidadPeso === 'lb' ? 'brand-bg text-white' : 'bg-white text-gray-600 hover:bg-gray-50'"
+                    class="px-3 py-1.5 border-l border-gray-300">lb</button>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-medium text-gray-700">Talla y circunferencias en:</span>
+          <div class="flex rounded-md border border-gray-300 overflow-hidden text-sm">
+            <button type="button" @click="unidadLongitud = 'cm'"
+                    :class="unidadLongitud === 'cm' ? 'brand-bg text-white' : 'bg-white text-gray-600 hover:bg-gray-50'"
+                    class="px-3 py-1.5">cm</button>
+            <button type="button" @click="unidadLongitud = 'in'"
+                    :class="unidadLongitud === 'in' ? 'brand-bg text-white' : 'bg-white text-gray-600 hover:bg-gray-50'"
+                    class="px-3 py-1.5 border-l border-gray-300">in (pulgadas)</button>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 w-full">El sistema convierte todo a kg/cm automáticamente al guardar — puedes medir en el sistema que te sea más cómodo.</p>
+      </div>
+
       <div>
         <h2 class="font-semibold text-gray-800 mb-3">Medidas corporales</h2>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Peso (kg) *</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Peso (<span x-text="unidadPeso"></span>) *</label>
             <input type="number" step="0.1" name="peso_kg" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Talla (cm) *</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Talla (<span x-text="unidadLongitud"></span>) *</label>
             <input type="number" step="0.1" name="talla_cm" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
           </div>
         </div>
@@ -142,7 +191,7 @@ $habitos   = $datosCompletos['habitos'] ?? null;
       </div>
 
       <div>
-        <h2 class="font-semibold text-gray-800 mb-1">Circunferencias corporales (cm)</h2>
+        <h2 class="font-semibold text-gray-800 mb-1">Circunferencias corporales (<span x-text="unidadLongitud"></span>)</h2>
         <p class="text-xs text-gray-400 mb-3">Opcional — llena solo las que midas</p>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <?php foreach ([
@@ -150,7 +199,7 @@ $habitos   = $datosCompletos['habitos'] ?? null;
               'cintura_cm' => 'Cintura', 'cadera_cm' => 'Cadera', 'muslo_cm' => 'Muslo', 'pantorrilla_cm' => 'Pantorrilla',
           ] as $campo => $etiqueta): ?>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1"><?= $etiqueta ?></label>
+              <label class="block text-sm font-medium text-gray-700 mb-1"><?= $etiqueta ?> (<span x-text="unidadLongitud"></span>)</label>
               <input type="number" step="0.1" name="<?= $campo ?>" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
             </div>
           <?php endforeach; ?>

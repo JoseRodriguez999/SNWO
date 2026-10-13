@@ -12,7 +12,7 @@ $datos      = $controller->manejar();
 
 if ($datos['paciente'] === null) {
     $pageTitle = 'Evaluación antropométrica';
-    $activeNav = 'pacientes';
+    $activeNav = 'evaluacion';
     include __DIR__ . '/includes/header.php';
     echo '<div class="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
             No se encontró el paciente indicado. <a href="pacientes.php" class="underline font-medium">Volver a pacientes</a>.
@@ -27,9 +27,11 @@ $idPaciente         = $datos['idPaciente'];
 $error             = $datos['error'];
 $csrf              = $datos['csrf'];
 $datosCompletos    = $datos['datosCompletos'];
+$esNueva           = $datos['esNueva'];
 $factoresActividad = $datos['factoresActividad'];
 
 $pageTitle = 'Evaluación antropométrica';
-$activeNav = 'pacientes';
+// Al consultar una cita pasada se resalta la pestaña Historial; al evaluar, la de Evaluación
+$activeNav = ($datosCompletos !== null && !$esNueva) ? 'historial' : 'evaluacion';
 
 require __DIR__ . '/views/evaluacion_view.php';

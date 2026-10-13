@@ -1,0 +1,3 @@
+config/conexion.php
+storage/pdfs/*
+!storage/pdfs/.gitkeep

@@ -46,4 +46,23 @@ class UsuarioModel
         $this->db->prepare("UPDATE tbl_usuarios SET activo = :activo WHERE id_usuario = :id")
                   ->execute(['activo' => $activo ? 1 : 0, 'id' => $idUsuario]);
     }
+
+    public function existeEmail(string $email): bool
+    {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM tbl_usuarios WHERE LOWER(email) = LOWER(:e)");
+        $stmt->execute(['e' => $email]);
+        return (int)$stmt->fetchColumn() > 0;
+    }
+
+    /** Crea un usuario activo con la contraseña ya cifrada (BCRYPT) y devuelve su id. */
+    public function crear(string $nombre, string $email, string $hash, string $rol): int
+    {
+        $stmt = $this->db->prepare(
+            "INSERT INTO tbl_usuarios (nombre_usuario, email, contrasena_hash, rol, activo)
+             OUTPUT INSERTED.id_usuario
+             VALUES (:nombre, :email, :hash, :rol, 1)"
+        );
+        $stmt->execute(['nombre' => $nombre, 'email' => $email, 'hash' => $hash, 'rol' => $rol]);
+        return (int)$stmt->fetchColumn();
+    }
 }

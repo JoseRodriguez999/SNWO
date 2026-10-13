@@ -7,6 +7,10 @@ $datos      = $controller->manejar();
 
 $usuarios = $datos['usuarios'];
 $csrf     = $datos['csrf'];
+$error    = $datos['error'];
+$exito    = $datos['exito'];
+$old      = $datos['old'];
+$esAdmin  = $datos['esAdmin'];
 
 $pageTitle = 'Gestión de usuarios y roles';
 $activeNav = 'usuarios';

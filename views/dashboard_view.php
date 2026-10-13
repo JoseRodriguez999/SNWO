@@ -37,7 +37,7 @@ $badgeColors = [
     <h2 class="font-semibold text-gray-800 mb-3">Últimas dietas generadas</h2>
     <div class="divide-y divide-gray-100 border border-gray-100 rounded-lg">
       <?php foreach ($ultimasDietas as $d): ?>
-        <a href="generador.php?paciente=<?= urlencode($d['nombre']) ?>" class="flex items-center justify-between px-4 py-3 hover:bg-gray-50">
+        <a href="pacientes.php" class="flex items-center justify-between px-4 py-3 hover:bg-gray-50">
           <div>
             <p class="font-medium text-gray-900"><?= htmlspecialchars($d['nombre']) ?></p>
             <p class="text-sm text-gray-500"><?= htmlspecialchars($d['detalle']) ?></p>

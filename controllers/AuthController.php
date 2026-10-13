@@ -12,7 +12,7 @@ class AuthController
         $this->usuarios = new UsuarioModel();
     }
 
-    /** Devuelve los datos que la vista necesita: ['error' => string, 'csrf' => string] */
+    /** Devuelve los datos que la vista necesita: ['error' => string, 'exito' => string, 'csrf' => string] */
     public function manejar(): array
     {
         Sesion::iniciar();
@@ -45,7 +45,11 @@ class AuthController
             }
         }
 
-        return ['error' => $error, 'csrf' => Sesion::csrfToken()];
+        // Mensaje de una sola vez (p. ej. "contraseña actualizada" tras restablecerla)
+        $exito = (string)($_SESSION['flash_login'] ?? '');
+        unset($_SESSION['flash_login']);
+
+        return ['error' => $error, 'exito' => $exito, 'csrf' => Sesion::csrfToken()];
     }
 
     private function intentarLogin(): string

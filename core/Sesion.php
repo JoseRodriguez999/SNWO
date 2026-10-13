@@ -56,4 +56,48 @@ class Sesion
 
         return $valido;
     }
+
+    // ================================================================
+    // Paciente activo ("anclado"): se elige una vez y todas las pestañas
+    // (Evaluación, Generador, Personalizar, Exportar, Progreso, Preferencias)
+    // trabajan con él sin tener que volver a seleccionarlo.
+    // ================================================================
+
+    /** @return array{id:int,nombre:string}|null */
+    public static function pacienteActivo(): ?array
+    {
+        return $_SESSION['paciente_activo'] ?? null;
+    }
+
+    /** Id del paciente a usar: el de la URL (?id=) si viene, si no el anclado en sesión */
+    public static function resolverPacienteId(): int
+    {
+        if (isset($_GET['id'])) {
+            return (int)$_GET['id'];
+        }
+        return (int)($_SESSION['paciente_activo']['id'] ?? 0);
+    }
+
+    public static function anclarPaciente(int $id, string $nombre): void
+    {
+        $_SESSION['paciente_activo'] = ['id' => $id, 'nombre' => $nombre];
+    }
+
+    public static function soltarPaciente(): void
+    {
+        unset($_SESSION['paciente_activo']);
+    }
+
+    /**
+     * Llamar justo después de buscar al paciente: si existe, queda anclado; si el anclado
+     * ya no existe (inactivo/borrado) y no se pidió uno explícito por URL, se suelta.
+     */
+    public static function sincronizarPaciente(int $idPaciente, ?array $paciente): void
+    {
+        if ($paciente) {
+            self::anclarPaciente($idPaciente, (string)$paciente['nombre']);
+        } elseif (!isset($_GET['id'])) {
+            self::soltarPaciente();
+        }
+    }
 }

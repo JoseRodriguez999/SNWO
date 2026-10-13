@@ -7,15 +7,22 @@
  */
 $activeNav = $activeNav ?? '';
 
+// Paciente activo (anclado en sesión): las pestañas marcadas con 'paciente' => true
+// trabajan con él; si no hay uno elegido, llevan a la lista de pacientes para elegirlo.
+$pacActivo = $_SESSION['paciente_activo'] ?? null;
+
 $navItems = [
-    'dashboard'    => ['label' => 'Dashboard',       'href' => 'dashboard.php'],
-    'pacientes'    => ['label' => 'Pacientes',       'href' => 'pacientes.php'],
-    'generador'    => ['label' => 'Generador',       'href' => 'generador.php'],
-    'personalizar' => ['label' => 'Personalizar',    'href' => 'personalizar.php'],
-    'exportar'     => ['label' => 'Exportar PDF',    'href' => 'exportar.php'],
-    'progreso'     => ['label' => 'Progreso',        'href' => 'progreso.php'],
-    'alimentos'    => ['label' => 'Alimentos',       'href' => 'alimentos.php'],
-    'usuarios'     => ['label' => 'Usuarios',        'href' => 'usuarios.php'],
+    'dashboard'    => ['label' => 'Dashboard',    'href' => 'dashboard.php'],
+    'pacientes'    => ['label' => 'Pacientes',    'href' => 'pacientes.php'],
+    'evaluacion'   => ['label' => 'Evaluación',   'href' => 'evaluacion.php',   'paciente' => true],
+    'historial'    => ['label' => 'Historial',    'href' => 'historial.php',    'paciente' => true],
+    'preferencias' => ['label' => 'Preferencias', 'href' => 'preferencias.php', 'paciente' => true],
+    'generador'    => ['label' => 'Generador',    'href' => 'generador.php',    'paciente' => true],
+    'personalizar' => ['label' => 'Personalizar', 'href' => 'personalizar.php', 'paciente' => true],
+    'exportar'     => ['label' => 'Exportar PDF', 'href' => 'exportar.php',     'paciente' => true],
+    'progreso'     => ['label' => 'Progreso',     'href' => 'progreso.php',     'paciente' => true],
+    'alimentos'    => ['label' => 'Alimentos',    'href' => 'alimentos.php'],
+    'usuarios'     => ['label' => 'Usuarios',     'href' => 'usuarios.php'],
 ];
 ?>
 <!DOCTYPE html>
@@ -52,7 +59,17 @@ $navItems = [
       </div>
       <span class="font-bold tracking-tight">SNWO — Smart Nutrition</span>
     </div>
-    <div class="text-sm text-emerald-50">Nutricionista: Dra. Gabriela Sagastume</div>
+    <div class="flex items-center gap-4">
+      <span class="text-sm text-emerald-50">
+        <?= htmlspecialchars($_SESSION['nombre'] ?? 'Usuario', ENT_QUOTES, 'UTF-8') ?>
+        <?php if (!empty($_SESSION['rol'])): ?>
+          <span class="text-emerald-200">(<?= htmlspecialchars($_SESSION['rol'], ENT_QUOTES, 'UTF-8') ?>)</span>
+        <?php endif; ?>
+      </span>
+      <a href="logout.php" class="text-sm bg-white/15 hover:bg-white/25 px-3 py-1.5 rounded-md transition-colors">
+        Cerrar sesión
+      </a>
+    </div>
   </div>
 </header>
 
@@ -60,14 +77,46 @@ $navItems = [
 <nav class="bg-white border-b border-gray-200">
   <div class="max-w-6xl mx-auto px-4">
     <div class="flex gap-1 overflow-x-auto text-sm">
-      <?php foreach ($navItems as $key => $item): ?>
-        <a href="<?= $item['href'] ?>"
-           class="whitespace-nowrap px-3 py-2.5 border-b-2 <?= $activeNav === $key ? 'border-[var(--brand)] brand-text font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700' ?>">
+      <?php foreach ($navItems as $key => $item):
+          $esActiva = $activeNav === $key;
+          $necesitaPaciente = !empty($item['paciente']);
+          if ($necesitaPaciente && $pacActivo) {
+              $href  = $item['href'] . '?id=' . (int)$pacActivo['id'];
+              $clase = $esActiva ? 'border-[var(--brand)] brand-text font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700';
+              $titulo = '';
+          } elseif ($necesitaPaciente) {
+              $href  = 'pacientes.php?elegir=1';
+              $clase = 'border-transparent text-gray-300 hover:text-gray-500';
+              $titulo = 'Primero selecciona un paciente';
+          } else {
+              $href  = $item['href'];
+              $clase = $esActiva ? 'border-[var(--brand)] brand-text font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700';
+              $titulo = '';
+          }
+      ?>
+        <a href="<?= htmlspecialchars($href, ENT_QUOTES, 'UTF-8') ?>"
+           <?= $titulo ? 'title="' . htmlspecialchars($titulo, ENT_QUOTES, 'UTF-8') . '"' : '' ?>
+           class="whitespace-nowrap px-3 py-2.5 border-b-2 <?= $clase ?>">
           <?= $item['label'] ?>
         </a>
       <?php endforeach; ?>
     </div>
   </div>
 </nav>
+
+<?php if ($pacActivo): ?>
+  <!-- Barra del paciente activo: se mantiene al navegar entre pestañas -->
+  <div class="bg-emerald-50 border-b border-emerald-100">
+    <div class="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between text-sm">
+      <span class="text-emerald-800">
+        Paciente activo: <strong><?= htmlspecialchars($pacActivo['nombre'], ENT_QUOTES, 'UTF-8') ?></strong>
+      </span>
+      <span class="flex items-center gap-4">
+        <a href="pacientes.php" class="brand-text hover:underline">Cambiar paciente</a>
+        <a href="pacientes.php?soltar=1" class="text-gray-500 hover:text-gray-700" title="Dejar de trabajar con este paciente">Quitar ✕</a>
+      </span>
+    </div>
+  </div>
+<?php endif; ?>
 
 <main class="max-w-6xl mx-auto px-4 py-6">

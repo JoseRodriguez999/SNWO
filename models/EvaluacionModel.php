@@ -112,4 +112,24 @@ class EvaluacionModel
             'habitos'         => $stmtH->fetch() ?: null,
         ];
     }
+
+    /**
+     * Lista todas las evaluaciones de un paciente (la más reciente primero) con los
+     * datos clave para el historial: medidas, GET, cintura y % grasa por bioimpedancia.
+     */
+    public function listarPorPaciente(int $idPaciente): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT e.id_evaluacion, e.fecha_evaluacion, e.peso_kg, e.talla_cm, e.imc,
+                    e.porcentaje_grasa, e.masa_magra_kg, e.get_calculado, e.formula_utilizada,
+                    c.cintura_cm, b.porcentaje_grasa AS grasa_bioimpedancia
+             FROM tbl_evaluaciones e
+             LEFT JOIN tbl_circunferencias c ON c.id_evaluacion = e.id_evaluacion
+             LEFT JOIN tbl_bioimpedancia   b ON b.id_evaluacion = e.id_evaluacion
+             WHERE e.id_paciente = :id
+             ORDER BY e.fecha_evaluacion DESC, e.id_evaluacion DESC"
+        );
+        $stmt->execute(['id' => $idPaciente]);
+        return $stmt->fetchAll();
+    }
 }

@@ -14,6 +14,7 @@ $error     = $datos['error'];
 $exito     = $datos['exito'];
 $csrf      = $datos['csrf'];
 $pacientes = $datos['pacientes'];
+$pacienteActivoId = $datos['pacienteActivoId'];
 
 $pageTitle = 'Gestión de pacientes';
 $activeNav = 'pacientes';

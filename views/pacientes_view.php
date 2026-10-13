@@ -2,6 +2,7 @@
 
 <div x-data="{
     mostrarModal: <?= isset($_GET['nuevo']) ? 'true' : 'false' ?>,
+    activoId: <?= (int)$pacienteActivoId ?>,
     q: '',
     pacientes: <?= htmlspecialchars(json_encode($pacientes), ENT_QUOTES, 'UTF-8') ?>,
     get filtrados() {
@@ -10,6 +11,13 @@
         return this.pacientes.filter(p => p.nombre.toLowerCase().includes(t) || p.correo.toLowerCase().includes(t));
     }
 }">
+
+  <?php if (isset($_GET['elegir'])): ?>
+    <div class="mb-4 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-sm px-4 py-3">
+      Primero elige un paciente con el botón <strong>Seleccionar</strong>. Después podrás moverte entre
+      Evaluación, Generador, Personalizar, Exportar PDF y Progreso sin volver a elegirlo.
+    </div>
+  <?php endif; ?>
 
   <?php if ($exito): ?>
     <div class="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3">
@@ -54,7 +62,7 @@
       </thead>
       <tbody>
         <template x-for="p in filtrados" :key="p.correo">
-          <tr class="border-b border-gray-50 hover:bg-gray-50">
+          <tr class="border-b border-gray-50 hover:bg-gray-50" :class="p.id === activoId ? 'bg-emerald-50/60' : ''">
             <td class="px-5 py-3">
               <div class="flex items-center gap-3">
                 <div class="w-8 h-8 rounded-full brand-bg text-white text-xs flex items-center justify-center font-semibold" x-text="p.iniciales"></div>
@@ -72,11 +80,17 @@
             </td>
             <td class="px-5 py-3 text-gray-600" x-text="p.evaluacion"></td>
             <td class="px-5 py-3">
+              <span x-show="p.id === activoId" class="text-xs font-semibold bg-emerald-600 text-white px-2 py-0.5 rounded-full">✓ Activo</span>
+              <a x-show="p.id !== activoId" :href="'pacientes.php?seleccionar=' + p.id"
+                 class="text-xs font-semibold border border-emerald-600 brand-text px-2 py-0.5 rounded-full hover:bg-emerald-50">Seleccionar</a>
+              <span class="text-gray-300 mx-1">|</span>
               <a :href="'evaluacion.php?id=' + p.id" class="brand-text font-medium hover:underline">Evaluar</a>
               <span class="text-gray-300 mx-1">|</span>
               <a :href="'progreso.php?id=' + p.id" class="brand-text font-medium hover:underline">Progreso</a>
               <span class="text-gray-300 mx-1">|</span>
-              <a :href="'generador.php?paciente=' + encodeURIComponent(p.nombre)" class="brand-text font-medium hover:underline">Ver</a>
+              <a :href="'generador.php?id=' + p.id" class="brand-text font-medium hover:underline">Ver dieta</a>
+              <span class="text-gray-300 mx-1">|</span>
+              <a :href="'preferencias.php?id=' + p.id" class="brand-text font-medium hover:underline">Preferencias</a>
               <span class="text-gray-300 mx-1">|</span>
               <a href="pacientes.php" class="brand-text font-medium hover:underline">Editar</a>
             </td>

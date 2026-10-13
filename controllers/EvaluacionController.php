@@ -11,6 +11,11 @@ class EvaluacionController
         'cintura_cm', 'cadera_cm', 'muslo_cm', 'pantorrilla_cm',
     ];
 
+    // Factores de conversión a unidades métricas (todo se guarda en kg/cm en la base de datos,
+    // sin importar en qué sistema haya medido la nutricionista).
+    private const LB_A_KG = 0.45359237;
+    private const IN_A_CM = 2.54;
+
     public function __construct()
     {
         $this->pacientes    = new PacienteModel();
@@ -22,8 +27,9 @@ class EvaluacionController
         Sesion::iniciar();
         Sesion::requiereLogin();
 
-        $idPaciente = (int)($_GET['id'] ?? 0);
+        $idPaciente = Sesion::resolverPacienteId();
         $paciente   = $this->pacientes->buscarPorId($idPaciente);
+        Sesion::sincronizarPaciente($idPaciente, $paciente);
 
         if (!$paciente) {
             return ['paciente' => null];
@@ -40,7 +46,7 @@ class EvaluacionController
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'registrar_evaluacion') {
             $idNueva = $this->registrar($idPaciente, $paciente, $edad, $error);
             if ($idNueva !== null) {
-                header('Location: evaluacion.php?id=' . $idPaciente . '&resultado=' . $idNueva);
+                header('Location: evaluacion.php?id=' . $idPaciente . '&resultado=' . $idNueva . '&nuevo=1');
                 exit;
             }
         }
@@ -52,6 +58,7 @@ class EvaluacionController
             'error'             => $error,
             'csrf'              => Sesion::csrfToken(),
             'datosCompletos'    => $datosCompletos,
+            'esNueva'           => isset($_GET['nuevo']),
             'factoresActividad' => CalculadoraNutricional::FACTOR_ACTIVIDAD,
         ];
     }
@@ -63,8 +70,19 @@ class EvaluacionController
             return null;
         }
 
-        $peso         = (float)($_POST['peso_kg'] ?? 0);
-        $talla        = (float)($_POST['talla_cm'] ?? 0);
+        $unidadPeso     = (string)($_POST['unidad_peso'] ?? 'kg');
+        $unidadLongitud = (string)($_POST['unidad_longitud'] ?? 'cm');
+
+        $peso = (float)($_POST['peso_kg'] ?? 0);
+        if ($unidadPeso === 'lb') {
+            $peso = round($peso * self::LB_A_KG, 2);
+        }
+
+        $talla = (float)($_POST['talla_cm'] ?? 0);
+        if ($unidadLongitud === 'in') {
+            $talla = round($talla * self::IN_A_CM, 1);
+        }
+
         $tricipital   = (float)($_POST['pliegue_tricipital'] ?? 0);
         $subescapular = (float)($_POST['pliegue_subescapular'] ?? 0);
         $abdominal    = (float)($_POST['pliegue_abdominal'] ?? 0);
@@ -73,10 +91,12 @@ class EvaluacionController
         $observaciones = trim((string)($_POST['observaciones'] ?? ''));
 
         if ($peso < 20 || $peso > 300) {
-            $error = 'El peso debe estar entre 20 y 300 kg.'; return null;
+            $error = 'El peso ingresado equivale a ' . $peso . ' kg, fuera del rango permitido (20–300 kg). Verifica la unidad seleccionada.';
+            return null;
         }
         if ($talla < 100 || $talla > 250) {
-            $error = 'La talla debe estar entre 100 y 250 cm.'; return null;
+            $error = 'La talla ingresada equivale a ' . $talla . ' cm, fuera del rango permitido (100–250 cm). Verifica la unidad seleccionada.';
+            return null;
         }
         if ($tricipital <= 0 || $subescapular <= 0 || $abdominal <= 0 || $tricipital > 60 || $subescapular > 60 || $abdominal > 60) {
             $error = 'Los pliegues cutáneos deben estar entre 1 y 60 mm.'; return null;
@@ -103,7 +123,11 @@ class EvaluacionController
 
         $circunferencias = [];
         foreach (self::CAMPOS_CIRCUNFERENCIA as $campo) {
-            $circunferencias[$campo] = $this->floatONull($campo);
+            $valor = $this->floatONull($campo);
+            if ($valor !== null && $unidadLongitud === 'in') {
+                $valor = round($valor * self::IN_A_CM, 1);
+            }
+            $circunferencias[$campo] = $valor;
         }
 
         $bio = [

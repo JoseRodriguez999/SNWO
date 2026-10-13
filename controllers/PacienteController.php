@@ -21,6 +21,22 @@ class PacienteController
         Sesion::iniciar();
         Sesion::requiereLogin();
 
+        // Selección explícita del paciente activo (queda anclado para todas las pestañas)
+        if (isset($_GET['seleccionar'])) {
+            $idSel = (int)$_GET['seleccionar'];
+            $sel   = $this->pacientes->buscarPorId($idSel);
+            if ($sel) {
+                Sesion::anclarPaciente($idSel, (string)$sel['nombre']);
+            }
+            header('Location: pacientes.php');
+            exit;
+        }
+        if (isset($_GET['soltar'])) {
+            Sesion::soltarPaciente();
+            header('Location: pacientes.php');
+            exit;
+        }
+
         $error = '';
         $exito = '';
 
@@ -43,6 +59,7 @@ class PacienteController
             'exito'     => $exito,
             'csrf'      => Sesion::csrfToken(),
             'pacientes' => $this->listarParaVista(),
+            'pacienteActivoId' => (int)(Sesion::pacienteActivo()['id'] ?? 0),
         ];
     }
 

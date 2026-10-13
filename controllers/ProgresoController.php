@@ -17,8 +17,9 @@ class ProgresoController
         Sesion::iniciar();
         Sesion::requiereLogin();
 
-        $idPaciente = (int)($_GET['id'] ?? 0);
+        $idPaciente = Sesion::resolverPacienteId();
         $paciente   = $this->pacientes->buscarPorId($idPaciente);
+        Sesion::sincronizarPaciente($idPaciente, $paciente);
 
         if (!$paciente) {
             return ['paciente' => null];
