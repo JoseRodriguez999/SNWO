@@ -11,6 +11,10 @@ $error    = $datos['error'];
 $exito    = $datos['exito'];
 $old      = $datos['old'];
 $esAdmin  = $datos['esAdmin'];
+$puedeCrear = $datos['puedeCrear'];
+$pacientesLibres = $datos['pacientesLibres'];
+$errorEdicion = $datos['errorEdicion'];
+$oldEdit = $datos['oldEdit'];
 
 $pageTitle = 'Gestión de usuarios y roles';
 $activeNav = 'usuarios';

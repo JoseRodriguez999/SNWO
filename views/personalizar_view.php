@@ -89,6 +89,30 @@
         </div>
       <?php endforeach; ?>
 
+      <?php if (!empty($cambios)): ?>
+        <h2 class="font-semibold text-gray-800 mt-8 mb-2">Cambios hechos por el paciente</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-gray-500 border-b border-gray-100">
+                <th class="py-2 pr-4 font-medium">Fecha</th>
+                <th class="py-2 pr-4 font-medium">Día y tiempo</th>
+                <th class="py-2 font-medium">Cambio</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($cambios as $c): ?>
+                <tr class="border-b border-gray-50">
+                  <td class="py-2 pr-4 whitespace-nowrap text-gray-600"><?= date('d/m/Y H:i', strtotime((string)$c['fecha'])) ?></td>
+                  <td class="py-2 pr-4 whitespace-nowrap"><?= htmlspecialchars($dias[(int)$c['dia_semana']] ?? '', ENT_QUOTES, 'UTF-8') ?> — <?= $c['tiempo_comida'] === 'Colacion' ? 'Colación' : htmlspecialchars((string)$c['tiempo_comida'], ENT_QUOTES, 'UTF-8') ?></td>
+                  <td class="py-2"><?= htmlspecialchars((string)$c['alimento_anterior'], ENT_QUOTES, 'UTF-8') ?> → <strong><?= htmlspecialchars((string)$c['alimento_nuevo'], ENT_QUOTES, 'UTF-8') ?></strong></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      <?php endif; ?>
+
       <div class="flex gap-3 mt-6">
         <a href="generador.php?id=<?= $idPaciente ?>" class="border border-gray-300 text-gray-700 text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-gray-50">Volver al plan</a>
       </div>

@@ -13,7 +13,7 @@ class UsuarioModel
     public function buscarPorEmail(string $email): ?array
     {
         $stmt = $this->db->prepare(
-            "SELECT id_usuario, nombre_usuario, email, contrasena_hash, rol, activo
+            "SELECT id_usuario, nombre_usuario, email, contrasena_hash, rol, activo, id_paciente
              FROM tbl_usuarios WHERE email = :email"
         );
         $stmt->execute(['email' => $email]);
@@ -35,7 +35,7 @@ class UsuarioModel
 
     public function listarTodos(): array
     {
-        $sql = "SELECT id_usuario, nombre_usuario, email, rol, activo, ultimo_acceso
+        $sql = "SELECT id_usuario, nombre_usuario, email, rol, activo, ultimo_acceso, id_paciente
                 FROM tbl_usuarios
                 ORDER BY nombre_usuario";
         return $this->db->query($sql)->fetchAll();
@@ -54,15 +54,38 @@ class UsuarioModel
         return (int)$stmt->fetchColumn() > 0;
     }
 
+    /** true si otro usuario (distinto de $idUsuario) ya usa ese correo */
+    public function existeEmailOtro(string $email, int $idUsuario): bool
+    {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM tbl_usuarios WHERE LOWER(email) = LOWER(:e) AND id_usuario <> :id");
+        $stmt->execute(['e' => $email, 'id' => $idUsuario]);
+        return (int)$stmt->fetchColumn() > 0;
+    }
+
+    public function buscarPorId(int $idUsuario): ?array
+    {
+        $stmt = $this->db->prepare("SELECT id_usuario, nombre_usuario, email, rol, activo, id_paciente FROM tbl_usuarios WHERE id_usuario = :id");
+        $stmt->execute(['id' => $idUsuario]);
+        $fila = $stmt->fetch();
+        return $fila ?: null;
+    }
+
+    /** Actualiza nombre, correo y rol. El vínculo con el paciente no se toca. */
+    public function actualizar(int $idUsuario, string $nombre, string $email, string $rol): void
+    {
+        $this->db->prepare("UPDATE tbl_usuarios SET nombre_usuario = :n, email = :e, rol = :r WHERE id_usuario = :id")
+                  ->execute(['n' => $nombre, 'e' => $email, 'r' => $rol, 'id' => $idUsuario]);
+    }
+
     /** Crea un usuario activo con la contraseña ya cifrada (BCRYPT) y devuelve su id. */
-    public function crear(string $nombre, string $email, string $hash, string $rol): int
+    public function crear(string $nombre, string $email, string $hash, string $rol, ?int $idPaciente = null): int
     {
         $stmt = $this->db->prepare(
-            "INSERT INTO tbl_usuarios (nombre_usuario, email, contrasena_hash, rol, activo)
+            "INSERT INTO tbl_usuarios (nombre_usuario, email, contrasena_hash, rol, activo, id_paciente)
              OUTPUT INSERTED.id_usuario
-             VALUES (:nombre, :email, :hash, :rol, 1)"
+             VALUES (:nombre, :email, :hash, :rol, 1, :paciente)"
         );
-        $stmt->execute(['nombre' => $nombre, 'email' => $email, 'hash' => $hash, 'rol' => $rol]);
+        $stmt->execute(['nombre' => $nombre, 'email' => $email, 'hash' => $hash, 'rol' => $rol, 'paciente' => $idPaciente]);
         return (int)$stmt->fetchColumn();
     }
 }

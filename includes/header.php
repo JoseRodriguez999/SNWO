@@ -24,6 +24,12 @@ $navItems = [
     'alimentos'    => ['label' => 'Alimentos',    'href' => 'alimentos.php'],
     'usuarios'     => ['label' => 'Usuarios',     'href' => 'usuarios.php'],
 ];
+
+// Rol Paciente: menú reducido (solo "Mi plan") y sin barra de paciente activo
+if (($_SESSION['rol'] ?? '') === 'Paciente') {
+    $navItems  = ['miplan' => ['label' => 'Mi plan', 'href' => 'mi_plan.php']];
+    $pacActivo = null;
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">

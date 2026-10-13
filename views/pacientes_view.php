@@ -2,6 +2,13 @@
 
 <div x-data="{
     mostrarModal: <?= isset($_GET['nuevo']) ? 'true' : 'false' ?>,
+    editarModal: <?= $errorEdicion !== '' ? 'true' : 'false' ?>,
+    ed: <?= htmlspecialchars(json_encode((object)$oldEdit), ENT_QUOTES, 'UTF-8') ?>,
+    abrirEditar(p) {
+        this.ed = { id: p.id, nombre: p.nombre, fecha_nacimiento: p.fecha_nacimiento, sexo: p.sexo, email: p.correo,
+                    telefono: p.telefono || '', objetivo: p.objetivo_cod, nivel_actividad: p.nivel_actividad };
+        this.editarModal = true;
+    },
     activoId: <?= (int)$pacienteActivoId ?>,
     q: '',
     pacientes: <?= htmlspecialchars(json_encode($pacientes), ENT_QUOTES, 'UTF-8') ?>,
@@ -92,7 +99,7 @@
               <span class="text-gray-300 mx-1">|</span>
               <a :href="'preferencias.php?id=' + p.id" class="brand-text font-medium hover:underline">Preferencias</a>
               <span class="text-gray-300 mx-1">|</span>
-              <a href="pacientes.php" class="brand-text font-medium hover:underline">Editar</a>
+              <button type="button" @click="abrirEditar(p)" class="brand-text font-medium hover:underline">Editar</button>
             </td>
           </tr>
         </template>
@@ -180,6 +187,79 @@
         <div class="flex gap-3 pt-2">
           <button type="submit" class="flex-1 brand-bg text-white font-semibold py-2.5 rounded-lg hover:opacity-90">Guardar paciente</button>
           <button type="button" @click="mostrarModal = false" class="flex-1 border border-gray-300 text-gray-700 font-semibold py-2.5 rounded-lg hover:bg-gray-50">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Editar paciente -->
+  <div x-show="editarModal" x-cloak class="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50" style="display: none;">
+    <div @click.outside="editarModal = false" class="bg-white rounded-xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div class="brand-bg text-white px-5 py-4 flex items-center justify-between">
+        <h2 class="font-semibold">Editar paciente</h2>
+        <button type="button" @click="editarModal = false" class="text-white/80 hover:text-white">✕</button>
+      </div>
+
+      <form method="POST" action="pacientes.php" class="p-5 space-y-4">
+        <input type="hidden" name="accion" value="editar_paciente">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
+        <input type="hidden" name="id_paciente" :value="ed.id">
+
+        <?php if ($errorEdicion !== ''): ?>
+          <div class="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+            <?= htmlspecialchars($errorEdicion, ENT_QUOTES, 'UTF-8') ?>
+          </div>
+        <?php endif; ?>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nombre completo *</label>
+          <input type="text" name="nombre" required x-model="ed.nombre" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de nacimiento *</label>
+            <input type="date" name="fecha_nacimiento" required x-model="ed.fecha_nacimiento" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Sexo *</label>
+            <select name="sexo" required x-model="ed.sexo" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="F">Femenino</option>
+              <option value="M">Masculino</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico *</label>
+            <input type="email" name="email" required x-model="ed.email" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+            <input type="text" name="telefono" maxlength="15" x-model="ed.telefono" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Objetivo *</label>
+          <select name="objetivo" required x-model="ed.objetivo" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="perdida">Pérdida de peso</option>
+            <option value="mantenimiento">Mantenimiento</option>
+            <option value="ganancia">Ganancia muscular</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nivel de actividad *</label>
+          <select name="nivel_actividad" required x-model="ed.nivel_actividad" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="sedentario">Sedentario</option>
+            <option value="moderado">Moderado</option>
+            <option value="activo">Activo</option>
+            <option value="muy activo">Muy activo</option>
+          </select>
+        </div>
+        <p class="text-xs text-gray-400">Si cambias el objetivo o el nivel de actividad, haz una nueva evaluación para recalcular el plan.</p>
+
+        <div class="flex gap-3 pt-2">
+          <button type="submit" class="flex-1 brand-bg text-white font-semibold py-2.5 rounded-lg hover:opacity-90">Guardar cambios</button>
+          <button type="button" @click="editarModal = false" class="flex-1 border border-gray-300 text-gray-700 font-semibold py-2.5 rounded-lg hover:bg-gray-50">Cancelar</button>
         </div>
       </form>
     </div>

@@ -71,7 +71,15 @@ class PersonalizarController
             }
         }
 
+        // Cambios que el propio paciente hizo en su plan (si aún no existe la tabla, se omite)
+        try {
+            $cambios = (new CambioPacienteModel())->listarPorPaciente($idPaciente);
+        } catch (Throwable $e) {
+            $cambios = [];
+        }
+
         return [
+            'cambios'     => $cambios,
             'paciente'    => $paciente,
             'idPaciente'  => $idPaciente,
             'dieta'       => $dieta,

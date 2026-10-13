@@ -9,6 +9,19 @@
 
 <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden" x-data="{
     mostrarModal: <?= $error !== '' ? 'true' : 'false' ?>,
+    editarModal: <?= $errorEdicion !== '' ? 'true' : 'false' ?>,
+    ed: <?= htmlspecialchars(json_encode((object)$oldEdit), ENT_QUOTES, 'UTF-8') ?>,
+    abrirEditar(a) {
+        const v = x => (x === null || x === undefined) ? '' : String(x);
+        this.ed = { id_alimento: a.id_alimento, nombre: a.nombre, id_categoria: v(a.id_categoria), porcion_gramos: v(a.porcion_gramos),
+                    calorias: v(a.calorias), proteinas_g: v(a.proteinas_g), carbohidratos_g: v(a.carbohidratos_g), grasas_g: v(a.grasas_g),
+                    fibra_g: v(a.fibra_g), sodio_mg: v(a.sodio_mg), azucar_g: v(a.azucar_g) };
+        this.editarModal = true;
+    },
+    calcEd() {
+        const n = x => parseFloat(String(x).replace(',', '.')) || 0;
+        this.ed.calorias = String(Math.round(n(this.ed.proteinas_g) * 4 + n(this.ed.carbohidratos_g) * 4 + n(this.ed.grasas_g) * 9));
+    },
     q: '',
     alimentos: <?= htmlspecialchars(json_encode($alimentos), ENT_QUOTES, 'UTF-8') ?>,
     get filtrados() {
@@ -57,7 +70,11 @@
           <td class="px-5 py-3 text-gray-600" x-text="a.carbohidratos_g + 'g'"></td>
           <td class="px-5 py-3 text-gray-600" x-text="a.grasas_g + 'g'"></td>
           <td class="px-5 py-3">
-            <a href="alimentos.php" class="brand-text font-medium hover:underline">Editar</a>
+            <?php if ($puedeCrear): ?>
+              <button type="button" @click="abrirEditar(a)" class="brand-text font-medium hover:underline">Editar</button>
+            <?php else: ?>
+              <span class="text-gray-300">—</span>
+            <?php endif; ?>
           </td>
         </tr>
       </template>
@@ -168,6 +185,77 @@
         <div class="flex gap-3 pt-2">
           <button type="submit" class="flex-1 brand-bg text-white font-semibold py-2.5 rounded-lg hover:opacity-90">Guardar alimento</button>
           <button type="button" @click="mostrarModal = false" class="flex-1 border border-gray-300 text-gray-700 font-semibold py-2.5 rounded-lg hover:bg-gray-50">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <?php endif; ?>
+
+  <?php if ($puedeCrear): ?>
+  <!-- Modal: Editar alimento -->
+  <div x-show="editarModal" x-cloak class="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50" style="display: none;">
+    <div @click.outside="editarModal = false" class="bg-white rounded-xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div class="brand-bg text-white px-5 py-4 flex items-center justify-between">
+        <h2 class="font-semibold">Editar alimento</h2>
+        <button type="button" @click="editarModal = false" class="text-white/80 hover:text-white">✕</button>
+      </div>
+
+      <form method="POST" action="alimentos.php" class="p-5 space-y-4">
+        <input type="hidden" name="accion" value="editar_alimento">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
+        <input type="hidden" name="id_alimento" :value="ed.id_alimento">
+
+        <?php if ($errorEdicion !== ''): ?>
+          <div class="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3"><?= htmlspecialchars($errorEdicion, ENT_QUOTES, 'UTF-8') ?></div>
+        <?php endif; ?>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del alimento *</label>
+          <input type="text" name="nombre" required maxlength="100" x-model="ed.nombre" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
+            <select name="id_categoria" required x-model="ed.id_categoria" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <?php foreach ($categorias as $cat): ?>
+                <option value="<?= (int)$cat['id_categoria'] ?>"><?= htmlspecialchars((string)$cat['nombre'], ENT_QUOTES, 'UTF-8') ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Porción (g) *</label>
+            <input type="text" inputmode="decimal" name="porcion_gramos" required x-model="ed.porcion_gramos" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 -mb-2">Valores nutricionales de <strong>una porción</strong>.</p>
+        <div class="grid grid-cols-3 gap-4">
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Proteínas (g) *</label>
+            <input type="text" inputmode="decimal" name="proteinas_g" required x-model="ed.proteinas_g" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Carbohidratos (g) *</label>
+            <input type="text" inputmode="decimal" name="carbohidratos_g" required x-model="ed.carbohidratos_g" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Grasas (g) *</label>
+            <input type="text" inputmode="decimal" name="grasas_g" required x-model="ed.grasas_g" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Calorías (kcal) *</label>
+          <div class="flex gap-2">
+            <input type="text" inputmode="decimal" name="calorias" required x-model="ed.calorias" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <button type="button" @click="calcEd()" class="border border-emerald-300 bg-emerald-50 brand-text text-sm font-semibold px-3 rounded-lg hover:bg-emerald-100">Calcular desde macros</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-4">
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Fibra (g)</label>
+            <input type="text" inputmode="decimal" name="fibra_g" x-model="ed.fibra_g" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Sodio (mg)</label>
+            <input type="text" inputmode="decimal" name="sodio_mg" x-model="ed.sodio_mg" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Azúcar (g)</label>
+            <input type="text" inputmode="decimal" name="azucar_g" x-model="ed.azucar_g" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></div>
+        </div>
+        <p class="text-xs text-gray-400">Los cambios aplican a los planes que se generen de ahora en adelante; los planes ya creados no se modifican.</p>
+
+        <div class="flex gap-3 pt-2">
+          <button type="submit" class="flex-1 brand-bg text-white font-semibold py-2.5 rounded-lg hover:opacity-90">Guardar cambios</button>
+          <button type="button" @click="editarModal = false" class="flex-1 border border-gray-300 text-gray-700 font-semibold py-2.5 rounded-lg hover:bg-gray-50">Cancelar</button>
         </div>
       </form>
     </div>

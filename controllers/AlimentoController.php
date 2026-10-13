@@ -32,6 +32,24 @@ class AlimentoController
             }
         }
 
+        $errorEdicion = '';
+        $oldEdit = [];
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'editar_alimento') {
+            $oldEdit = [
+                'id_alimento' => (int)($_POST['id_alimento'] ?? 0), 'nombre' => trim((string)($_POST['nombre'] ?? '')),
+                'id_categoria' => $_POST['id_categoria'] ?? '', 'porcion_gramos' => $_POST['porcion_gramos'] ?? '',
+                'calorias' => $_POST['calorias'] ?? '', 'proteinas_g' => $_POST['proteinas_g'] ?? '',
+                'carbohidratos_g' => $_POST['carbohidratos_g'] ?? '', 'grasas_g' => $_POST['grasas_g'] ?? '',
+                'fibra_g' => $_POST['fibra_g'] ?? '', 'sodio_mg' => $_POST['sodio_mg'] ?? '', 'azucar_g' => $_POST['azucar_g'] ?? '',
+            ];
+            $errorEdicion = $puedeCrear ? $this->editar() : 'No tienes permiso para editar alimentos.';
+            if ($errorEdicion === '') {
+                $_SESSION['flash_exito'] = 'Alimento actualizado correctamente.';
+                header('Location: alimentos.php');
+                exit;
+            }
+        }
+
         $exito = '';
         if (!empty($_SESSION['flash_exito'])) {
             $exito = (string)$_SESSION['flash_exito'];
@@ -44,6 +62,8 @@ class AlimentoController
             'categorias' => $this->alimentos->listarCategorias(),
             'csrf'       => Sesion::csrfToken(),
             'error'      => $error,
+            'errorEdicion' => $errorEdicion,
+            'oldEdit'    => $oldEdit,
             'exito'      => $exito,
             'old'        => $old,
             'puedeCrear' => $puedeCrear,
@@ -58,13 +78,12 @@ class AlimentoController
         return is_numeric($v) ? (float)$v : false;
     }
 
-    /** @return string Vacío si se creó bien; mensaje de error en caso contrario */
-    private function crear(): string
+    /**
+     * Lee y valida los campos del formulario (alta y edición).
+     * @return array|string  Datos limpios, o un mensaje de error
+     */
+    private function leerFormulario()
     {
-        if (!Sesion::validarCsrf($_POST['csrf_token'] ?? null)) {
-            return 'Token de seguridad inválido. Recarga la página e intenta de nuevo.';
-        }
-
         $nombre = trim((string)($_POST['nombre'] ?? ''));
         $idCat  = (int)($_POST['id_categoria'] ?? 0);
         if ($nombre === '' || mb_strlen($nombre) > 100) {
@@ -99,10 +118,22 @@ class AlimentoController
         if ($d['azucar_g'] !== null && $d['carbohidratos_g'] !== null && $d['azucar_g'] > $d['carbohidratos_g']) {
             return 'El azúcar no puede ser mayor que los carbohidratos totales.';
         }
-        if ($this->alimentos->existeNombre($nombre)) {
+        return $d;
+    }
+
+    /** @return string Vacío si se creó bien; mensaje de error en caso contrario */
+    private function crear(): string
+    {
+        if (!Sesion::validarCsrf($_POST['csrf_token'] ?? null)) {
+            return 'Token de seguridad inválido. Recarga la página e intenta de nuevo.';
+        }
+        $d = $this->leerFormulario();
+        if (is_string($d)) {
+            return $d;
+        }
+        if ($this->alimentos->existeNombre($d['nombre'])) {
             return 'Ya existe un alimento con ese nombre en el catálogo.';
         }
-
         try {
             $id = $this->alimentos->crear($d);
             (new AuditoriaModel())->registrar((int)($_SESSION['id_usuario'] ?? 0) ?: null, 'ALIMENTO_CREADO', 'tbl_alimentos', $id);
@@ -110,6 +141,33 @@ class AlimentoController
         } catch (PDOException $e) {
             error_log('Error al crear alimento SNWO: ' . $e->getMessage());
             return 'Ocurrió un error al guardar el alimento. Intenta de nuevo.';
+        }
+    }
+
+    /** @return string Vacío si se actualizó bien; mensaje de error en caso contrario */
+    private function editar(): string
+    {
+        if (!Sesion::validarCsrf($_POST['csrf_token'] ?? null)) {
+            return 'Token de seguridad inválido. Recarga la página e intenta de nuevo.';
+        }
+        $id = (int)($_POST['id_alimento'] ?? 0);
+        if ($id <= 0 || !$this->alimentos->obtenerPorId($id)) {
+            return 'El alimento ya no existe.';
+        }
+        $d = $this->leerFormulario();
+        if (is_string($d)) {
+            return $d;
+        }
+        if ($this->alimentos->existeNombre($d['nombre'], $id)) {
+            return 'Ya existe otro alimento con ese nombre en el catálogo.';
+        }
+        try {
+            $this->alimentos->actualizar($id, $d);
+            (new AuditoriaModel())->registrar((int)($_SESSION['id_usuario'] ?? 0) ?: null, 'ALIMENTO_EDITADO', 'tbl_alimentos', $id);
+            return '';
+        } catch (PDOException $e) {
+            error_log('Error al editar alimento SNWO: ' . $e->getMessage());
+            return 'Ocurrió un error al guardar los cambios. Intenta de nuevo.';
         }
     }
 }

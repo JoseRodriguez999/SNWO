@@ -18,7 +18,7 @@ class AuthController
         Sesion::iniciar();
 
         if (!empty($_SESSION['id_usuario'])) {
-            header('Location: dashboard.php');
+            header('Location: ' . Sesion::paginaInicio());
             exit;
         }
 
@@ -73,6 +73,7 @@ class AuthController
             $_SESSION['id_usuario'] = $usuario['id_usuario'];
             $_SESSION['nombre']     = $usuario['nombre_usuario'];
             $_SESSION['rol']        = $usuario['rol'];
+            $_SESSION['id_paciente'] = $usuario['id_paciente'] !== null ? (int)$usuario['id_paciente'] : null;
             $_SESSION['intentos']   = 0;
 
             $this->usuarios->actualizarUltimoAcceso((int)$usuario['id_usuario']);
@@ -84,7 +85,7 @@ class AuthController
                 );
             }
 
-            header('Location: dashboard.php');
+            header('Location: ' . Sesion::paginaInicio());
             exit;
         }
 

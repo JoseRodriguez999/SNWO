@@ -28,11 +28,34 @@ class Sesion
         session_start();
     }
 
-    /** Corta la ejecución y redirige a login.php si no hay sesión activa */
+    /** Páginas que puede abrir el rol Paciente (todo lo demás lo manda a su plan) */
+    private const PAGINAS_PACIENTE = ['mi_plan.php', 'logout.php', 'login.php'];
+
+    public static function esPaciente(): bool
+    {
+        return ($_SESSION['rol'] ?? '') === 'Paciente';
+    }
+
+    /** Página a la que va cada rol después de iniciar sesión */
+    public static function paginaInicio(): string
+    {
+        return self::esPaciente() ? 'mi_plan.php' : 'dashboard.php';
+    }
+
+    /**
+     * Corta la ejecución y redirige a login.php si no hay sesión activa.
+     * Control central por rol: un Paciente solo puede abrir PAGINAS_PACIENTE; cualquier otra
+     * pantalla (que llama a este método) lo devuelve a "Mi plan".
+     */
     public static function requiereLogin(): void
     {
         if (empty($_SESSION['id_usuario'])) {
             header('Location: login.php');
+            exit;
+        }
+        if (self::esPaciente()
+            && !in_array(basename((string)($_SERVER['SCRIPT_NAME'] ?? '')), self::PAGINAS_PACIENTE, true)) {
+            header('Location: mi_plan.php');
             exit;
         }
     }

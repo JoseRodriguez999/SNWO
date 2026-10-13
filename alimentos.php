@@ -12,6 +12,8 @@ $error = $datos['error'];
 $exito = $datos['exito'];
 $old = $datos['old'];
 $puedeCrear = $datos['puedeCrear'];
+$errorEdicion = $datos['errorEdicion'];
+$oldEdit = $datos['oldEdit'];
 $total     = $datos['total'];
 
 $pageTitle = 'Catálogo de alimentos';

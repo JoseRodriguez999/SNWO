@@ -28,6 +28,7 @@ $editandoAlimento   = $datos['editandoAlimento'];
 $tiempoSlot         = $datos['tiempoSlot'];
 $resultadosBusqueda = $datos['resultadosBusqueda'];
 $terminoBusqueda    = $datos['terminoBusqueda'];
+$cambios            = $datos['cambios'];
 
 $pageTitle = 'Personalizar plan';
 $activeNav = 'personalizar';
