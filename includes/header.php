@@ -1,9 +1,9 @@
 <?php
 /**
- * header.php — Encabezado compartido de todas las pantallas del prototipo SNWO.
+ * header.php — Encabezado compartido de todas las pantallas de SNWO.
  * Variables esperadas antes del include:
  *   $pageTitle  (string) título mostrado en la barra superior
- *   $activeNav  (string) clave de la pestaña activa en el nav de demo
+ *   $activeNav  (string) clave de la pestaña activa en el menú
  */
 $activeNav = $activeNav ?? '';
 
@@ -50,13 +50,17 @@ if (($_SESSION['rol'] ?? '') === 'Paciente') {
     .brand-border{border-color:var(--brand);}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
     [x-cloak]{display:none !important;}
+    html{-webkit-text-size-adjust:100%;}
+    img,svg{max-width:100%;}
+    /* En celular, 16px evita que el navegador haga zoom al tocar un campo */
+    @media (max-width:640px){ input,select,textarea{font-size:16px !important;} }
 </style>
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-800">
 
 <!-- Barra superior de la app -->
 <header class="brand-bg text-white">
-  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
     <div class="flex items-center gap-2">
       <div class="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
@@ -65,8 +69,8 @@ if (($_SESSION['rol'] ?? '') === 'Paciente') {
       </div>
       <span class="font-bold tracking-tight">SNWO — Smart Nutrition</span>
     </div>
-    <div class="flex items-center gap-4">
-      <span class="text-sm text-emerald-50">
+    <div class="flex items-center gap-3 sm:gap-4">
+      <span class="text-sm text-emerald-50 max-w-[9rem] sm:max-w-none truncate">
         <?= htmlspecialchars($_SESSION['nombre'] ?? 'Usuario', ENT_QUOTES, 'UTF-8') ?>
         <?php if (!empty($_SESSION['rol'])): ?>
           <span class="text-emerald-200">(<?= htmlspecialchars($_SESSION['rol'], ENT_QUOTES, 'UTF-8') ?>)</span>
@@ -79,7 +83,7 @@ if (($_SESSION['rol'] ?? '') === 'Paciente') {
   </div>
 </header>
 
-<!-- Nav de demostración (no forma parte del diseño final, es guía de navegación del prototipo) -->
+<!-- Navegación principal (se desplaza horizontalmente en pantallas pequeñas) -->
 <nav class="bg-white border-b border-gray-200">
   <div class="max-w-6xl mx-auto px-4">
     <div class="flex gap-1 overflow-x-auto text-sm">
@@ -125,4 +129,4 @@ if (($_SESSION['rol'] ?? '') === 'Paciente') {
   </div>
 <?php endif; ?>
 
-<main class="max-w-6xl mx-auto px-4 py-6">
+<main class="max-w-6xl mx-auto px-4 py-4 sm:py-6">

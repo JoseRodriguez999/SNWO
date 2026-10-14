@@ -57,6 +57,8 @@
       </select>
     </div>
 
+    <div class="overflow-x-auto">
+
     <table class="w-full text-sm">
       <thead>
         <tr class="text-left text-gray-500 border-b border-gray-100">
@@ -108,6 +110,7 @@
         </tr>
       </tbody>
     </table>
+  </div>
 
     <div class="px-5 py-3 text-xs text-gray-400 border-t border-gray-100">
       Mostrando <span x-text="filtrados.length"></span> de <?= count($pacientes) ?> pacientes
@@ -137,7 +140,7 @@
           <input type="text" name="nombre" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de nacimiento *</label>
             <input type="date" name="fecha_nacimiento" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -152,7 +155,7 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico *</label>
             <input type="email" name="email" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -215,7 +218,7 @@
           <label class="block text-sm font-medium text-gray-700 mb-1">Nombre completo *</label>
           <input type="text" name="nombre" required x-model="ed.nombre" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de nacimiento *</label>
             <input type="date" name="fecha_nacimiento" required x-model="ed.fecha_nacimiento" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -228,7 +231,7 @@
             </select>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico *</label>
             <input type="email" name="email" required x-model="ed.email" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">

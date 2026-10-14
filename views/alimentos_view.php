@@ -45,6 +45,8 @@
     </div>
   </div>
 
+  <div class="overflow-x-auto">
+
   <table class="w-full text-sm">
     <thead>
       <tr class="text-left text-gray-500 border-b border-gray-100">
@@ -83,6 +85,7 @@
       </tr>
     </tbody>
   </table>
+  </div>
 
   <div class="px-5 py-3 text-xs text-gray-400 border-t border-gray-100">
     Mostrando <span x-text="filtrados.length"></span> de <?= (int)$total ?> alimentos en el catálogo
@@ -114,7 +117,7 @@
                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
             <select name="id_categoria" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -135,7 +138,7 @@
 
         <p class="text-xs text-gray-500 -mb-2">Valores nutricionales de <strong>una porción</strong> (según la porción indicada).</p>
 
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Proteínas (g) *</label>
             <input type="text" inputmode="decimal" name="proteinas_g" required x-model="p"
@@ -163,7 +166,7 @@
           <p class="text-xs text-gray-400 mt-1">Aproximado: proteínas×4 + carbohidratos×4 + grasas×9. Puedes escribir el valor de la tabla nutricional.</p>
         </div>
 
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Fibra (g)</label>
             <input type="text" inputmode="decimal" name="fibra_g" value="<?= $v('fibra_g') ?>"
@@ -213,7 +216,7 @@
           <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del alimento *</label>
           <input type="text" name="nombre" required maxlength="100" x-model="ed.nombre" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
             <select name="id_categoria" required x-model="ed.id_categoria" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -228,7 +231,7 @@
           </div>
         </div>
         <p class="text-xs text-gray-500 -mb-2">Valores nutricionales de <strong>una porción</strong>.</p>
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div><label class="block text-sm font-medium text-gray-700 mb-1">Proteínas (g) *</label>
             <input type="text" inputmode="decimal" name="proteinas_g" required x-model="ed.proteinas_g" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></div>
           <div><label class="block text-sm font-medium text-gray-700 mb-1">Carbohidratos (g) *</label>
@@ -243,7 +246,7 @@
             <button type="button" @click="calcEd()" class="border border-emerald-300 bg-emerald-50 brand-text text-sm font-semibold px-3 rounded-lg hover:bg-emerald-100">Calcular desde macros</button>
           </div>
         </div>
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div><label class="block text-sm font-medium text-gray-700 mb-1">Fibra (g)</label>
             <input type="text" inputmode="decimal" name="fibra_g" x-model="ed.fibra_g" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></div>
           <div><label class="block text-sm font-medium text-gray-700 mb-1">Sodio (mg)</label>

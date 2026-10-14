@@ -66,6 +66,8 @@
     </select>
   </div>
 
+  <div class="overflow-x-auto">
+
   <table class="w-full text-sm">
     <thead>
       <tr class="text-left text-gray-500 border-b border-gray-100">
@@ -114,6 +116,7 @@
       </template>
     </tbody>
   </table>
+  </div>
 
   <div class="px-5 py-3 flex items-center justify-between text-xs text-gray-400 border-t border-gray-100">
     <span x-text="filtrados.length + ' de <?= count($usuarios) ?> usuarios registrados — contraseñas cifradas con BCRYPT'"></span>
@@ -156,7 +159,7 @@
                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico *</label>
             <input type="email" name="email" required maxlength="150" x-model="correo"
@@ -185,7 +188,7 @@
           <p class="text-xs text-gray-400 mt-1">Esta cuenta solo verá el plan de ese paciente. Solo aparecen pacientes que aún no tienen usuario; si falta alguien, regístralo primero en Pacientes.</p>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña inicial *</label>
             <input :type="ver ? 'text' : 'password'" name="password" required minlength="8" maxlength="72" x-model="pass" autocomplete="new-password"
@@ -233,7 +236,7 @@
           <label class="block text-sm font-medium text-gray-700 mb-1">Nombre completo *</label>
           <input type="text" name="nombre_usuario" required maxlength="100" x-model="ed.nombre_usuario" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico *</label>
             <input type="email" name="email" required maxlength="150" x-model="ed.email" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -260,7 +263,7 @@
 
         <div class="border-t border-gray-100 pt-3">
           <p class="text-sm font-medium text-gray-700 mb-2">Nueva contraseña <span class="text-gray-400 font-normal">(opcional — déjala vacía para no cambiarla)</span></p>
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <input :type="verEd ? 'text' : 'password'" name="password" maxlength="72" x-model="p1" autocomplete="new-password" placeholder="Nueva contraseña" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
             <input :type="verEd ? 'text' : 'password'" name="password2" x-model="p2" autocomplete="new-password" placeholder="Confirmar" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
           </div>

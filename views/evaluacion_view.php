@@ -159,7 +159,7 @@ $habitos   = $datosCompletos['habitos'] ?? null;
 
       <div>
         <h2 class="font-semibold text-gray-800 mb-3">Medidas corporales</h2>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Peso (<span x-text="unidadPeso"></span>) *</label>
             <input type="number" step="0.1" name="peso_kg" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -174,7 +174,7 @@ $habitos   = $datosCompletos['habitos'] ?? null;
       <div>
         <h2 class="font-semibold text-gray-800 mb-1">Pliegues cutáneos (mm)</h2>
         <p class="text-xs text-gray-400 mb-3">Usados para calcular % de grasa corporal (Jackson-Pollock 3 pliegues + Siri)</p>
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Tricipital *</label>
             <input type="number" step="0.1" name="pliegue_tricipital" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -317,7 +317,7 @@ $habitos   = $datosCompletos['habitos'] ?? null;
 
       <div>
         <h2 class="font-semibold text-gray-800 mb-3">Cálculo del GET</h2>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Fórmula a utilizar *</label>
             <select name="formula_utilizada" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
