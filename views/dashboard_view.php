@@ -11,8 +11,8 @@ $badgeColors = [
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
   <?php foreach ($stats as $s): ?>
     <div class="rounded-xl border p-4 text-center <?= $s['destacado'] ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-200' ?>">
-      <p class="text-sm text-gray-500 mb-1"><?= $s['label'] ?></p>
-      <p class="text-2xl font-bold text-gray-900"><?= $s['value'] ?></p>
+      <p class="text-sm text-gray-500 mb-1"><?= htmlspecialchars($s['label'], ENT_QUOTES, 'UTF-8') ?></p>
+      <p class="text-2xl font-bold text-gray-900"><?= htmlspecialchars($s['value'], ENT_QUOTES, 'UTF-8') ?></p>
     </div>
   <?php endforeach; ?>
 </div>
@@ -35,6 +35,9 @@ $badgeColors = [
 
   <div>
     <h2 class="font-semibold text-gray-800 mb-3">Últimas dietas generadas</h2>
+    <?php if (!$ultimasDietas): ?>
+      <p class="text-sm text-gray-500 border border-dashed border-gray-200 rounded-lg px-4 py-6 text-center">Todavía no se ha generado ninguna dieta.</p>
+    <?php else: ?>
     <div class="divide-y divide-gray-100 border border-gray-100 rounded-lg">
       <?php foreach ($ultimasDietas as $d): ?>
         <a href="pacientes.php" class="flex items-center justify-between px-4 py-3 hover:bg-gray-50">
@@ -46,6 +49,7 @@ $badgeColors = [
         </a>
       <?php endforeach; ?>
     </div>
+    <?php endif; ?>
   </div>
 </div>
 
