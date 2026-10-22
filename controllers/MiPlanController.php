@@ -74,7 +74,7 @@ class MiPlanController
             unset($_SESSION['flash_exito']);
         }
 
-        $dieta = $this->dietas->obtenerDietaActual($idPaciente);
+        $dieta = $this->dietas->obtenerDietaActual($idPaciente, true);
         $vista = (($_GET['vista'] ?? '') === 'gustos') ? 'gustos' : 'plan';
 
         // Modo búsqueda de sustituto
@@ -130,7 +130,7 @@ class MiPlanController
         $nuevo   = (int)($_POST['id_alimento_nuevo'] ?? 0);
 
         // 1) El tiempo de comida debe ser de SU plan actual
-        $dieta = $this->dietas->obtenerDietaActual($idPaciente);
+        $dieta = $this->dietas->obtenerDietaActual($idPaciente, true);
         $menu  = $this->dietas->obtenerMenuPorId($idMenu);
         if (!$dieta || !$menu || (int)$menu['id_dieta'] !== (int)$dieta['idDieta']) {
             $this->auditoria->registrar((int)$_SESSION['id_usuario'], 'PACIENTE_CAMBIO_DENEGADO', 'tbl_menu', $idMenu ?: null, 'FALLIDO');
@@ -187,7 +187,7 @@ class MiPlanController
     /** Envía el PDF del plan al navegador (sin guardarlo en el servidor). Devuelve un error solo si no se puede. */
     private function entregarPdf(int $idPaciente, array $paciente): string
     {
-        $dieta = $this->dietas->obtenerDietaActual($idPaciente);
+        $dieta = $this->dietas->obtenerDietaActual($idPaciente, true);
         if (!$dieta) {
             return 'Todavía no tienes un plan. Tu nutricionista lo generará pronto.';
         }

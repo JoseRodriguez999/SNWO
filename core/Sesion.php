@@ -28,8 +28,21 @@ class Sesion
         session_start();
     }
 
+    /** Roles del personal de la clínica (SuperAdmin es único y el de mayor autoridad; 'Administrador' es un rol heredado) */
+    public const ROLES_PERSONAL = ['SuperAdmin', 'Nutricionista', 'Administrador'];
+
     /** Páginas que puede abrir el rol Paciente (todo lo demás lo manda a su plan) */
     private const PAGINAS_PACIENTE = ['mi_plan.php', 'logout.php', 'login.php'];
+
+    public static function esSuperAdmin(): bool
+    {
+        return ($_SESSION['rol'] ?? '') === 'SuperAdmin';
+    }
+
+    public static function esPersonal(): bool
+    {
+        return in_array($_SESSION['rol'] ?? '', self::ROLES_PERSONAL, true);
+    }
 
     public static function esPaciente(): bool
     {
@@ -56,6 +69,19 @@ class Sesion
         if (self::esPaciente()
             && !in_array(basename((string)($_SERVER['SCRIPT_NAME'] ?? '')), self::PAGINAS_PACIENTE, true)) {
             header('Location: mi_plan.php');
+            exit;
+        }
+    }
+
+    /**
+     * Pantallas exclusivas del personal clínico (SuperAdmin y Nutricionista; el rol heredado
+     * 'Administrador' conserva los mismos permisos). Cualquier otro rol vuelve a su pantalla de inicio.
+     */
+    public static function requiereNutricionista(): void
+    {
+        self::requiereLogin();
+        if (!self::esPersonal()) {
+            header('Location: ' . self::paginaInicio());
             exit;
         }
     }

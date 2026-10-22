@@ -33,12 +33,37 @@ class UsuarioModel
                   ->execute(['hash' => $nuevoHash, 'id' => $idUsuario]);
     }
 
-    public function listarTodos(): array
+    /** $incluirSuperAdmin = false oculta la cuenta SuperAdmin (solo ella misma la ve) */
+    public function listarTodos(bool $incluirSuperAdmin = false): array
     {
         $sql = "SELECT id_usuario, nombre_usuario, email, rol, activo, ultimo_acceso, id_paciente
-                FROM tbl_usuarios
-                ORDER BY nombre_usuario";
+                FROM tbl_usuarios"
+             . ($incluirSuperAdmin ? "" : " WHERE rol <> 'SuperAdmin'")
+             . " ORDER BY nombre_usuario";
         return $this->db->query($sql)->fetchAll();
+    }
+
+    /**
+     * Elimina la cuenta de forma definitiva. Los registros de auditoría que ella generó se conservan
+     * (se les quita el usuario para no violar la llave foránea). Nunca elimina a un SuperAdmin.
+     */
+    public function eliminar(int $idUsuario): void
+    {
+        $this->db->beginTransaction();
+        try {
+            $this->db->prepare("UPDATE tbl_auditoria SET id_usuario = NULL WHERE id_usuario = :id")->execute(['id' => $idUsuario]);
+            $stmt = $this->db->prepare("DELETE FROM tbl_usuarios WHERE id_usuario = :id AND rol <> 'SuperAdmin'");
+            $stmt->execute(['id' => $idUsuario]);
+            if ($stmt->rowCount() !== 1) {
+                throw new RuntimeException('El usuario no se pudo eliminar.');
+            }
+            $this->db->commit();
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        }
     }
 
     public function cambiarEstado(int $idUsuario, bool $activo): void

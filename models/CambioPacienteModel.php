@@ -23,6 +23,21 @@ class CambioPacienteModel
         )->execute(['p' => $idPaciente, 'd' => $idDieta, 'dia' => $dia, 't' => $tiempo, 'ant' => $idAnterior, 'nvo' => $idNuevo]);
     }
 
+    /** Últimos cambios de todos los pacientes (para el panel del personal) */
+    public function recientes(int $limite = 8): array
+    {
+        $limite = max(1, min(50, $limite));
+        return $this->db->query(
+            "SELECT TOP $limite c.fecha, c.id_paciente, p.nombre AS paciente, c.tiempo_comida,
+                    a1.nombre AS alimento_anterior, a2.nombre AS alimento_nuevo
+             FROM tbl_cambios_paciente c
+             INNER JOIN tbl_pacientes p ON p.id_paciente = c.id_paciente
+             INNER JOIN tbl_alimentos a1 ON a1.id_alimento = c.id_alimento_anterior
+             INNER JOIN tbl_alimentos a2 ON a2.id_alimento = c.id_alimento_nuevo
+             ORDER BY c.fecha DESC, c.id_cambio DESC"
+        )->fetchAll();
+    }
+
     /** Últimos cambios del paciente, del más reciente al más antiguo */
     public function listarPorPaciente(int $idPaciente, int $limite = 20): array
     {

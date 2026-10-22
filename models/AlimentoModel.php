@@ -59,7 +59,7 @@ class AlimentoModel
         $sql .= " ORDER BY a.calorias ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetchAll();
+        return Alergenos::filtrar($stmt->fetchAll(), $restricciones['alergenos'] ?? null);
     }
 
     public function buscarPorNombre(string $termino): array
@@ -95,10 +95,10 @@ class AlimentoModel
      * pertenece a una categoría válida para ese tiempo de comida (mismas reglas
      * que usa el generador automático, para no romper la coherencia del plan).
      */
-    public function buscarCompatibles(string $termino, array $categoriasPermitidas, bool $permitirHuevo = false): array
+    public function buscarCompatibles(string $termino, array $categoriasPermitidas, bool $permitirHuevo = false, ?array $alergenos = null): array
     {
         if (empty($categoriasPermitidas)) {
-            return $this->buscarPorNombre($termino);
+            return Alergenos::filtrar($this->buscarPorNombre($termino), $alergenos);
         }
 
         $marcadores = [];
@@ -120,7 +120,7 @@ class AlimentoModel
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetchAll();
+        return Alergenos::filtrar($stmt->fetchAll(), $alergenos);
     }
 
     /** Categorías para el selector del formulario "Nuevo alimento" */
@@ -217,6 +217,6 @@ class AlimentoModel
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetchAll();
+        return Alergenos::filtrar($stmt->fetchAll(), $restricciones['alergenos'] ?? null);
     }
 }

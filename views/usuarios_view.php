@@ -1,6 +1,12 @@
 <?php include __DIR__ . '/../includes/header.php'; ?>
 <?php $v = static fn(string $k): string => htmlspecialchars((string)($old[$k] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
 
+<?php if (!empty($errorGlobal)): ?>
+  <div class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+    <?= htmlspecialchars($errorGlobal, ENT_QUOTES, 'UTF-8') ?>
+  </div>
+<?php endif; ?>
+
 <?php if ($exito): ?>
   <div class="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3">
     ✓ <?= htmlspecialchars($exito, ENT_QUOTES, 'UTF-8') ?>
@@ -12,6 +18,7 @@
     editarModal: <?= $errorEdicion !== '' ? 'true' : 'false' ?>,
     ed: <?= htmlspecialchars(json_encode((object)$oldEdit), ENT_QUOTES, 'UTF-8') ?>,
     yo: <?= (int)($_SESSION['id_usuario'] ?? 0) ?>,
+    esSuper: <?= !empty($esSuper) ? 'true' : 'false' ?>,
     verEd: false, p1: '', p2: '',
     abrirEditar(u) {
         this.ed = { id_usuario: u.id_usuario, nombre_usuario: u.nombre_usuario, email: u.email, rol: (u.rol === 'Administrador' ? 'Nutricionista' : u.rol), esPaciente: u.rol === 'Paciente' };
@@ -38,7 +45,7 @@
         return (partes[0][0] + (partes[partes.length-1][0]||'')).toUpperCase();
     },
     rolClase(rol) {
-        return { 'bg-blue-100 text-blue-700': rol==='Administrador', 'bg-emerald-100 text-emerald-700': rol==='Nutricionista', 'bg-gray-100 text-gray-600': rol==='Paciente' }
+        return { 'bg-purple-100 text-purple-700': rol==='SuperAdmin', 'bg-blue-100 text-blue-700': rol==='Administrador', 'bg-emerald-100 text-emerald-700': rol==='Nutricionista', 'bg-gray-100 text-gray-600': rol==='Paciente' }
     }
 }">
   <div class="brand-bg text-white px-5 py-4 flex items-center justify-between">
@@ -57,6 +64,7 @@
     <select x-model="filtroRol" class="border border-gray-300 rounded-lg text-sm px-3 py-2 text-gray-600">
       <option value="">Todos los roles</option>
       <option value="Nutricionista">Nutricionista</option>
+      <?php if (!empty($esSuper)): ?><option value="SuperAdmin">Super Administrador</option><?php endif; ?>
       <option value="Paciente">Paciente</option>
     </select>
     <select x-model="filtroEstado" class="border border-gray-300 rounded-lg text-sm px-3 py-2 text-gray-600">
@@ -91,7 +99,7 @@
             </div>
           </td>
           <td class="px-5 py-3">
-            <span class="text-xs font-medium px-2.5 py-1 rounded-full" :class="rolClase(u.rol)" x-text="u.rol"></span>
+            <span class="text-xs font-medium px-2.5 py-1 rounded-full" :class="rolClase(u.rol)" x-text="u.rol === 'SuperAdmin' ? 'Super Administrador' : u.rol"></span>
           </td>
           <td class="px-5 py-3">
             <span class="text-xs font-medium px-2.5 py-1 rounded-full"
@@ -102,6 +110,8 @@
           <td class="px-5 py-3">
             <?php if ($esAdmin): ?>
             <button type="button" @click="abrirEditar(u)" class="brand-text font-medium hover:underline">Editar</button>
+            <template x-if="u.rol !== 'SuperAdmin'">
+            <span>
             <span class="text-gray-300 mx-1">|</span>
             <form method="POST" action="usuarios.php" class="inline">
               <input type="hidden" name="accion" value="cambiar_estado">
@@ -110,6 +120,20 @@
               <input type="hidden" name="activo" :value="u.activo == 1 ? 0 : 1">
               <button type="submit" class="font-medium hover:underline" :class="u.activo == 1 ? 'text-red-500' : 'text-emerald-600'" x-text="u.activo == 1 ? 'Desactivar' : 'Activar'"></button>
             </form>
+            <template x-if="esSuper">
+              <span>
+                <span class="text-gray-300 mx-1">|</span>
+                <form method="POST" action="usuarios.php" class="inline"
+                      @submit="if (!confirm('¿Eliminar definitivamente a ' + u.nombre_usuario + '? Esta acción no se puede deshacer.')) $event.preventDefault()">
+                  <input type="hidden" name="accion" value="eliminar_usuario">
+                  <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
+                  <input type="hidden" name="id_usuario" :value="u.id_usuario">
+                  <button type="submit" class="font-medium text-red-600 hover:underline">Eliminar</button>
+                </form>
+              </span>
+            </template>
+            </span>
+            </template>
             <?php endif; ?>
           </td>
         </tr>
@@ -252,6 +276,7 @@
             <template x-if="ed.rol !== 'Paciente'">
               <select name="rol" required x-model="ed.rol" :disabled="ed.id_usuario == yo" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 <option value="Nutricionista">Nutricionista</option>
+                <option value="SuperAdmin" x-show="ed.rol === 'SuperAdmin'">Super Administrador</option>
               </select>
             </template>
             <template x-if="ed.rol !== 'Paciente' && ed.id_usuario == yo">

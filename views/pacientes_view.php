@@ -26,6 +26,12 @@
     </div>
   <?php endif; ?>
 
+  <?php if (!empty($errorGlobal)): ?>
+    <div class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+      <?= htmlspecialchars($errorGlobal, ENT_QUOTES, 'UTF-8') ?>
+    </div>
+  <?php endif; ?>
+
   <?php if ($exito): ?>
     <div class="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3">
       ✓ <?= htmlspecialchars($exito, ENT_QUOTES, 'UTF-8') ?>
@@ -102,6 +108,16 @@
               <a :href="'preferencias.php?id=' + p.id" class="brand-text font-medium hover:underline">Preferencias</a>
               <span class="text-gray-300 mx-1">|</span>
               <button type="button" @click="abrirEditar(p)" class="brand-text font-medium hover:underline">Editar</button>
+              <?php if (!empty($esSuper)): ?>
+              <span class="text-gray-300 mx-1">|</span>
+              <form method="POST" action="pacientes.php" class="inline"
+                    @submit="if (!confirm('¿Eliminar definitivamente a ' + p.nombre + '?\n\nSe borrarán también sus evaluaciones, dietas, historial, preferencias y su cuenta de acceso. Esta acción no se puede deshacer.')) $event.preventDefault()">
+                <input type="hidden" name="accion" value="eliminar_paciente">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
+                <input type="hidden" name="id_paciente" :value="p.id">
+                <button type="submit" class="font-medium text-red-600 hover:underline">Eliminar</button>
+              </form>
+              <?php endif; ?>
             </td>
           </tr>
         </template>

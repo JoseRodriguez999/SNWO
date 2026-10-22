@@ -7,6 +7,7 @@ $datos      = $controller->manejar();
 
 $stats         = $datos['stats'];
 $ultimasDietas = $datos['ultimasDietas'];
+$cambios       = $datos['cambios'];
 
 $pageTitle = 'Dashboard';
 $activeNav = 'dashboard';

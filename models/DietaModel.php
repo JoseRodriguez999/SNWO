@@ -39,6 +39,16 @@ class DietaModel
         'Colacion' => ['Frutas', 'Lácteos', 'Grasas'],
     ];
 
+    /**
+     * Ajuste del GET según el objetivo del paciente (tbl_pacientes.objetivo).
+     * Pérdida: -20 % (déficit moderado, ~0.5 kg/semana en promedio); ganancia: +10 %.
+     * Piso de seguridad en pérdida: 1200 kcal (mujeres) / 1500 kcal (hombres), sin superar nunca el GET original.
+     */
+    public const AJUSTE_OBJETIVO = ['perdida' => -0.20, 'mantenimiento' => 0.0, 'ganancia' => 0.10];
+    public const PISO_KCAL = ['F' => 1200.0, 'M' => 1500.0];
+
+    public const ESTADOS = ['Borrador', 'Activa', 'Finalizada'];
+
     public function __construct()
     {
         $this->db = Database::conexion();
@@ -59,6 +69,28 @@ class DietaModel
         $stmt->execute(['id' => $idPaciente]);
         $fila = $stmt->fetch();
         return $fila ?: null;
+    }
+
+    /**
+     * Aplica el objetivo del paciente al GET calculado.
+     * @return array{get:float,base:float,objetivo:string,pct:float,piso:bool}
+     */
+    public function ajustarGetPorObjetivo(int $idPaciente, float $getBase): array
+    {
+        $stmt = $this->db->prepare("SELECT sexo, objetivo FROM tbl_pacientes WHERE id_paciente = :id");
+        $stmt->execute(['id' => $idPaciente]);
+        $p = $stmt->fetch() ?: [];
+        $objetivo = (string)($p['objetivo'] ?? 'mantenimiento');
+        $pct = self::AJUSTE_OBJETIVO[$objetivo] ?? 0.0;
+        $sexo = ($p['sexo'] ?? 'M') === 'F' ? 'F' : 'M';
+
+        $get = $getBase * (1 + $pct);
+        $piso = false;
+        if ($pct < 0) {
+            $minimo = min(self::PISO_KCAL[$sexo], $getBase);
+            if ($get < $minimo) { $get = $minimo; $piso = true; }
+        }
+        return ['get' => round($get, 0), 'base' => $getBase, 'objetivo' => $objetivo, 'pct' => $pct, 'piso' => $piso];
     }
 
     public function obtenerNombresPatologias(int $idPaciente): array
@@ -90,7 +122,31 @@ class DietaModel
                 $combinadas[$clave] = isset($combinadas[$clave]) ? min($combinadas[$clave], $valor) : $valor;
             }
         }
+        $alergenos = $this->obtenerAlergenos($idPaciente);
+        if (!Alergenos::vacio($alergenos)) {
+            $combinadas['alergenos'] = $alergenos;
+        }
         return $combinadas;
+    }
+
+    /**
+     * Alergias/intolerancias de la evaluación más reciente que las haya registrado
+     * (campo de texto libre del cuestionario de hábitos), ya interpretadas por Alergenos.
+     * @return array{grupos:string[], terminos:string[]}
+     */
+    public function obtenerAlergenos(int $idPaciente): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT TOP 1 h.alergias_alimentarias
+             FROM tbl_cuestionario_habitos h
+             INNER JOIN tbl_evaluaciones e ON e.id_evaluacion = h.id_evaluacion
+             WHERE e.id_paciente = :id AND h.alergias_alimentarias IS NOT NULL
+               AND LTRIM(RTRIM(h.alergias_alimentarias)) <> ''
+             ORDER BY e.fecha_evaluacion DESC, e.id_evaluacion DESC"
+        );
+        $stmt->execute(['id' => $idPaciente]);
+        $texto = $stmt->fetchColumn();
+        return Alergenos::interpretar($texto === false ? null : (string)$texto);
     }
 
     // ================================================================
@@ -240,7 +296,8 @@ class DietaModel
             throw new RuntimeException('El paciente no tiene una evaluación antropométrica registrada. Regístrala antes de generar la dieta.');
         }
 
-        $get = (float)$evaluacion['get_calculado'];
+        $ajuste = $this->ajustarGetPorObjetivo($idPaciente, (float)$evaluacion['get_calculado']);
+        $get = $ajuste['get'];
         $restricciones = $this->obtenerRestriccionesCombinadas($idPaciente);
         $distribucion = $this->generarDistribucionAutomatica($get, $restricciones);
         $catalogo = $this->alimentos->filtrarPorPatologia($restricciones);
@@ -284,8 +341,10 @@ class DietaModel
         return [
             'idEvaluacion'  => (int)$evaluacion['id_evaluacion'],
             'get'           => $get,
+            'ajuste'        => $ajuste,
             'distribucion'  => $distribucion,
             'catalogoTotal' => count($catalogo),
+            'alergenos'     => Alergenos::describir($restricciones['alergenos'] ?? null),
             'advertencia'   => $advertencia,
             'menu'          => $menu,
         ];
@@ -301,6 +360,11 @@ class DietaModel
         try {
             $fechaInicio = (new DateTime())->format('Y-m-d');
             $fechaFin    = (new DateTime())->modify('+6 days')->format('Y-m-d');
+
+            // Una nueva versión reemplaza a los borradores anteriores (el plan Activo no se toca)
+            $this->db->prepare(
+                "UPDATE tbl_dietas SET estado = 'Finalizada' WHERE id_paciente = :p AND estado = 'Borrador'"
+            )->execute(['p' => $idPaciente]);
 
             $stmtDieta = $this->db->prepare(
                 "INSERT INTO tbl_dietas
@@ -368,12 +432,20 @@ class DietaModel
     // 6) Lectura de la dieta ya guardada (para mostrarla sin regenerar)
     // ================================================================
 
-    public function obtenerDietaActual(int $idPaciente): ?array
+    /**
+     * @param bool $soloActiva true => únicamente el plan en estado 'Activa' (lo que ve el paciente);
+     *                         false => el más reciente en cualquier estado (lo que gestiona el personal).
+     */
+    public function obtenerDietaActual(int $idPaciente, bool $soloActiva = false): ?array
     {
         $stmtDieta = $this->db->prepare(
-            "SELECT TOP 1 id_dieta, estado, get_objetivo, proteinas_meta_g, grasas_meta_g,
-                    carbohidratos_meta_g, fecha_creacion, fecha_inicio, fecha_fin
-             FROM tbl_dietas WHERE id_paciente = :id ORDER BY fecha_creacion DESC"
+            "SELECT TOP 1 d.id_dieta, d.estado, d.get_objetivo, d.proteinas_meta_g, d.grasas_meta_g,
+                    d.carbohidratos_meta_g, d.fecha_creacion, d.fecha_inicio, d.fecha_fin,
+                    e.get_calculado AS get_base
+             FROM tbl_dietas d
+             LEFT JOIN tbl_evaluaciones e ON e.id_evaluacion = d.id_evaluacion
+             WHERE d.id_paciente = :id" . ($soloActiva ? " AND d.estado = 'Activa'" : "") . "
+             ORDER BY d.fecha_creacion DESC, d.id_dieta DESC"
         );
         $stmtDieta->execute(['id' => $idPaciente]);
         $dieta = $stmtDieta->fetch();
@@ -421,6 +493,7 @@ class DietaModel
             'idDieta'      => (int)$dieta['id_dieta'],
             'estado'       => $dieta['estado'],
             'get'          => (float)$dieta['get_objetivo'],
+            'getBase'      => $dieta['get_base'] !== null ? (float)$dieta['get_base'] : null,
             'metaProteina' => (float)$dieta['proteinas_meta_g'],
             'metaGrasa'    => (float)$dieta['grasas_meta_g'],
             'metaCarbohidratos' => (float)$dieta['carbohidratos_meta_g'],
@@ -428,6 +501,47 @@ class DietaModel
             'fechaFin'     => $dieta['fecha_fin'],
             'menu'         => $menu,
         ];
+    }
+
+    /**
+     * Cambia el estado de una dieta. Transiciones válidas: Borrador→Activa, Activa→Finalizada,
+     * Borrador→Finalizada. Al activar, la dieta Activa anterior del mismo paciente pasa a Finalizada
+     * (un paciente tiene como máximo un plan Activo).
+     * @throws RuntimeException si la dieta no existe o la transición no es válida
+     */
+    public function cambiarEstado(int $idDieta, string $nuevo): array
+    {
+        if (!in_array($nuevo, ['Activa', 'Finalizada'], true)) {
+            throw new RuntimeException('Estado no válido.');
+        }
+        $stmt = $this->db->prepare("SELECT id_dieta, id_paciente, estado FROM tbl_dietas WHERE id_dieta = :id");
+        $stmt->execute(['id' => $idDieta]);
+        $dieta = $stmt->fetch();
+        if (!$dieta) {
+            throw new RuntimeException('La dieta indicada no existe.');
+        }
+        $actual = (string)$dieta['estado'];
+        $validas = ['Borrador' => ['Activa', 'Finalizada'], 'Activa' => ['Finalizada']];
+        if (!in_array($nuevo, $validas[$actual] ?? [], true)) {
+            throw new RuntimeException('No se puede pasar una dieta de “' . $actual . '” a “' . $nuevo . '”.');
+        }
+
+        $this->db->beginTransaction();
+        try {
+            if ($nuevo === 'Activa') {
+                $this->db->prepare(
+                    "UPDATE tbl_dietas SET estado = 'Finalizada'
+                     WHERE id_paciente = :p AND estado = 'Activa' AND id_dieta <> :d"
+                )->execute(['p' => (int)$dieta['id_paciente'], 'd' => $idDieta]);
+            }
+            $this->db->prepare("UPDATE tbl_dietas SET estado = :e WHERE id_dieta = :d")
+                ->execute(['e' => $nuevo, 'd' => $idDieta]);
+            $this->db->commit();
+        } catch (PDOException $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+        return ['idPaciente' => (int)$dieta['id_paciente'], 'anterior' => $actual];
     }
 
     public static function nombresDias(): array

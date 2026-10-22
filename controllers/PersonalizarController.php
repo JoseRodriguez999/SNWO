@@ -66,7 +66,8 @@ class PersonalizarController
                 $termino = trim((string)($_GET['buscar'] ?? ''));
                 $categorias = DietaModel::CATEGORIAS_POR_TIEMPO[$tiempoSlot] ?? [];
                 $resultadosBusqueda = $this->alimentos->buscarCompatibles(
-                    $termino, $categorias, $tiempoSlot === 'Desayuno'
+                    $termino, $categorias, $tiempoSlot === 'Desayuno',
+                    $this->dietas->obtenerAlergenos($idPaciente)
                 );
             }
         }

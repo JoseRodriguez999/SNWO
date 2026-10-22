@@ -30,6 +30,9 @@ $badgeColors = [
       <a href="alimentos.php" class="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-3 text-gray-600 hover:bg-gray-50 transition-colors">
         <span class="text-gray-400">▶</span> Catálogo de alimentos
       </a>
+      <a href="reportes.php" class="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-3 text-gray-600 hover:bg-gray-50 transition-colors">
+        <span class="text-gray-400">▶</span> Reportes
+      </a>
     </div>
   </div>
 
@@ -49,6 +52,19 @@ $badgeColors = [
         </a>
       <?php endforeach; ?>
     </div>
+    <?php endif; ?>
+
+    <?php if (!empty($cambios)): ?>
+      <h2 class="font-semibold text-gray-800 mt-6 mb-3">Cambios recientes de los pacientes</h2>
+      <div class="divide-y divide-gray-100 border border-gray-100 rounded-lg">
+        <?php foreach ($cambios as $c): ?>
+          <a href="personalizar.php?id=<?= (int)$c['id_paciente'] ?>" class="block px-4 py-3 hover:bg-gray-50">
+            <p class="font-medium text-gray-900 text-sm"><?= htmlspecialchars($c['paciente']) ?>
+              <span class="text-xs text-gray-400 font-normal">· <?= date('d/m H:i', strtotime((string)$c['fecha'])) ?> · <?= $c['tiempo_comida'] === 'Colacion' ? 'Colación' : htmlspecialchars($c['tiempo_comida']) ?></span></p>
+            <p class="text-sm text-gray-500"><?= htmlspecialchars($c['alimento_anterior']) ?> → <?= htmlspecialchars($c['alimento_nuevo']) ?></p>
+          </a>
+        <?php endforeach; ?>
+      </div>
     <?php endif; ?>
   </div>
 </div>

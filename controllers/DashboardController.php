@@ -15,7 +15,14 @@ class DashboardController
         Sesion::iniciar();
         Sesion::requiereLogin();
 
+        try {
+            $cambios = Sesion::esPersonal() ? (new CambioPacienteModel())->recientes(8) : [];
+        } catch (Throwable $e) {
+            $cambios = [];
+        }
+
         return [
+            'cambios'       => $cambios,
             'stats'         => $this->dashboard->obtenerEstadisticas(),
             'ultimasDietas' => $this->dashboard->obtenerUltimasDietas(),
         ];

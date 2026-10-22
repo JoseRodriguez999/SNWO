@@ -39,7 +39,14 @@ class PacienteController
 
         $error = '';
         $exito = '';
+        $errorGlobal = '';
         $errorEdicion = '';
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'eliminar_paciente') {
+            $this->eliminar();
+            header('Location: pacientes.php');
+            exit;
+        }
         $oldEdit = [];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'editar_paciente') {
@@ -64,16 +71,55 @@ class PacienteController
             $exito = $_SESSION['flash_exito'];
             unset($_SESSION['flash_exito']);
         }
+        if (!empty($_SESSION['flash_error'])) {
+            $errorGlobal = (string)$_SESSION['flash_error'];
+            unset($_SESSION['flash_error']);
+        }
 
         return [
             'error'     => $error,
             'exito'     => $exito,
+            'errorGlobal' => $errorGlobal,
+            'esSuper'   => Sesion::esSuperAdmin(),
             'errorEdicion' => $errorEdicion,
             'oldEdit'      => $oldEdit,
             'csrf'      => Sesion::csrfToken(),
             'pacientes' => $this->listarParaVista(),
             'pacienteActivoId' => (int)(Sesion::pacienteActivo()['id'] ?? 0),
         ];
+    }
+
+    /** Elimina un paciente y todos sus datos (solo SuperAdmin). Deja el resultado en flash_exito / flash_error. */
+    private function eliminar(): void
+    {
+        $yo = (int)($_SESSION['id_usuario'] ?? 0) ?: null;
+        if (!Sesion::esSuperAdmin()) {
+            $_SESSION['flash_error'] = 'Solo el Super Administrador puede eliminar pacientes.';
+            return;
+        }
+        if (!Sesion::validarCsrf($_POST['csrf_token'] ?? null)) {
+            $_SESSION['flash_error'] = 'Token de seguridad inválido. Recarga la página e intenta de nuevo.';
+            return;
+        }
+        $id = (int)($_POST['id_paciente'] ?? 0);
+        $paciente = $id > 0 ? $this->pacientes->buscarPorId($id) : null;
+        if (!$paciente) {
+            $_SESSION['flash_error'] = 'El paciente ya no existe.';
+            return;
+        }
+        $auditoria = new AuditoriaModel();
+        try {
+            $this->pacientes->eliminarDefinitivo($id);
+            $auditoria->registrar($yo, 'PACIENTE_ELIMINADO', 'tbl_pacientes', $id);
+            if ((int)(Sesion::pacienteActivo()['id'] ?? 0) === $id) {
+                Sesion::soltarPaciente();
+            }
+            $_SESSION['flash_exito'] = 'Paciente «' . $paciente['nombre'] . '» eliminado junto con todos sus datos.';
+        } catch (Throwable $e) {
+            error_log('Error al eliminar paciente SNWO: ' . $e->getMessage());
+            $auditoria->registrar($yo, 'PACIENTE_ELIMINADO', 'tbl_pacientes', $id, 'FALLIDO');
+            $_SESSION['flash_error'] = 'No se pudo eliminar al paciente; no se borró nada. Revisa el registro de errores del servidor.';
+        }
     }
 
     /** @return string Vacío si se creó bien; mensaje de error en caso contrario */

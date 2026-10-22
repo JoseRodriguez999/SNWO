@@ -12,6 +12,8 @@ $datos      = $controller->manejar();
 
 $error     = $datos['error'];
 $exito     = $datos['exito'];
+$errorGlobal = $datos['errorGlobal'];
+$esSuper   = $datos['esSuper'];
 $csrf      = $datos['csrf'];
 $pacientes = $datos['pacientes'];
 $pacienteActivoId = $datos['pacienteActivoId'];

@@ -6,7 +6,7 @@ class AlimentoController
     private AlimentoModel $alimentos;
 
     /** Roles que pueden agregar alimentos al catálogo */
-    private const ROLES_EDITORES = ['Administrador', 'Nutricionista'];
+    private const ROLES_EDITORES = ['SuperAdmin', 'Administrador', 'Nutricionista'];
 
     public function __construct()
     {

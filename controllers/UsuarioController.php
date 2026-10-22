@@ -20,8 +20,10 @@ class UsuarioController
         Sesion::iniciar();
         Sesion::requiereLogin();
 
-        // Nutricionista tiene la gestión de usuarios (un 'Administrador' heredado conserva los mismos permisos)
-        $esAdmin    = in_array($_SESSION['rol'] ?? '', ['Administrador', 'Nutricionista'], true);
+        // El personal (SuperAdmin, Nutricionista y el 'Administrador' heredado) gestiona usuarios;
+        // solo el SuperAdmin puede eliminarlos y nadie más puede tocar su cuenta.
+        $esAdmin    = Sesion::esPersonal();
+        $esSuper    = Sesion::esSuperAdmin();
         $puedeCrear = $esAdmin;
         $accion  = $_SERVER['REQUEST_METHOD'] === 'POST' ? (string)($_POST['accion'] ?? '') : '';
         $error   = '';
@@ -31,6 +33,12 @@ class UsuarioController
             if ($esAdmin) {
                 $this->cambiarEstado();
             }
+            header('Location: usuarios.php');
+            exit;
+        }
+
+        if ($accion === 'eliminar_usuario') {
+            $this->eliminar($esSuper);
             header('Location: usuarios.php');
             exit;
         }
@@ -60,6 +68,12 @@ class UsuarioController
             }
         }
 
+        $errorGlobal = '';
+        if (!empty($_SESSION['flash_error'])) {
+            $errorGlobal = (string)$_SESSION['flash_error'];
+            unset($_SESSION['flash_error']);
+        }
+
         $exito = '';
         if (!empty($_SESSION['flash_exito'])) {
             $exito = (string)$_SESSION['flash_exito'];
@@ -67,7 +81,9 @@ class UsuarioController
         }
 
         return [
-            'usuarios' => $this->usuarios->listarTodos(),
+            'usuarios' => $this->usuarios->listarTodos($esSuper),
+            'errorGlobal' => $errorGlobal,
+            'esSuper'  => $esSuper,
             'csrf'     => Sesion::csrfToken(),
             'error'    => $error,
             'errorEdicion' => $errorEdicion,
@@ -87,9 +103,48 @@ class UsuarioController
         }
         $id     = (int)($_POST['id_usuario'] ?? 0);
         $activo = (bool)($_POST['activo'] ?? false);
+        $objetivo = $id > 0 ? $this->usuarios->buscarPorId($id) : null;
+        if (!$objetivo || $objetivo['rol'] === 'SuperAdmin') {
+            return; // la cuenta SuperAdmin no se puede activar/desactivar desde la interfaz
+        }
         // Un administrador no puede desactivarse a sí mismo (se quedaría sin acceso)
         if ($id > 0 && !($id === (int)($_SESSION['id_usuario'] ?? 0) && !$activo)) {
             $this->usuarios->cambiarEstado($id, $activo);
+        }
+    }
+
+    /** Elimina una cuenta (solo SuperAdmin). Deja el resultado en flash_exito / flash_error. */
+    private function eliminar(bool $esSuper): void
+    {
+        $auditoria = new AuditoriaModel();
+        $yo = (int)($_SESSION['id_usuario'] ?? 0);
+
+        if (!$esSuper) {
+            $_SESSION['flash_error'] = 'Solo el Super Administrador puede eliminar usuarios.';
+            return;
+        }
+        if (!Sesion::validarCsrf($_POST['csrf_token'] ?? null)) {
+            $_SESSION['flash_error'] = 'Token de seguridad inválido. Recarga la página e intenta de nuevo.';
+            return;
+        }
+        $id = (int)($_POST['id_usuario'] ?? 0);
+        $objetivo = $id > 0 ? $this->usuarios->buscarPorId($id) : null;
+        if (!$objetivo) {
+            $_SESSION['flash_error'] = 'El usuario ya no existe.';
+            return;
+        }
+        if ($id === $yo || $objetivo['rol'] === 'SuperAdmin') {
+            $_SESSION['flash_error'] = 'No se puede eliminar la cuenta de Super Administrador.';
+            return;
+        }
+        try {
+            $this->usuarios->eliminar($id);
+            $auditoria->registrar($yo ?: null, 'USUARIO_ELIMINADO:' . $objetivo['rol'], 'tbl_usuarios', $id);
+            $_SESSION['flash_exito'] = 'Usuario «' . $objetivo['nombre_usuario'] . '» eliminado.';
+        } catch (Throwable $e) {
+            error_log('Error al eliminar usuario SNWO: ' . $e->getMessage());
+            $auditoria->registrar($yo ?: null, 'USUARIO_ELIMINADO:' . $objetivo['rol'], 'tbl_usuarios', $id, 'FALLIDO');
+            $_SESSION['flash_error'] = 'No se pudo eliminar: la cuenta tiene registros asociados. Puedes desactivarla en su lugar.';
         }
     }
 
@@ -172,6 +227,15 @@ class UsuarioController
         $password = (string)($_POST['password'] ?? '');
         $confirma = (string)($_POST['password2'] ?? '');
 
+        // La cuenta SuperAdmin es única: solo ella misma puede editarla y su rol no cambia nunca
+        $esCuentaSuper = $actual['rol'] === 'SuperAdmin';
+        if ($esCuentaSuper) {
+            if (!Sesion::esSuperAdmin() || $id !== (int)($_SESSION['id_usuario'] ?? 0)) {
+                return 'No tienes permiso para editar esta cuenta.';
+            }
+            $rol = 'SuperAdmin';
+        }
+
         if ($nombre === '' || $email === '' || $rol === '') {
             return 'Completa nombre, correo y rol.';
         }
@@ -181,7 +245,7 @@ class UsuarioController
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 150) {
             return 'El correo no tiene un formato válido.';
         }
-        if (!in_array($rol, self::ROLES, true)) {
+        if (!$esCuentaSuper && !in_array($rol, self::ROLES, true)) {
             return 'Rol inválido.';
         }
         // El rol Paciente está ligado a un paciente concreto: no se cambia desde aquí (ni hacia ni desde Paciente)

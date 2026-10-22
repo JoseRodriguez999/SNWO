@@ -67,6 +67,45 @@ class PacienteModel
         return (int)$stmt->fetchColumn() > 0;
     }
 
+    /**
+     * Elimina un paciente y TODO lo asociado a él (evaluaciones, medidas, historial de peso, dietas y menús,
+     * preferencias, cambios, patologías y su cuenta de acceso). Es definitivo; solo lo usa el SuperAdmin.
+     * Todo ocurre en una transacción: si algo falla no se borra nada. Los registros de auditoría se conservan.
+     */
+    public function eliminarDefinitivo(int $id): void
+    {
+        $dietas = "SELECT id_dieta FROM tbl_dietas WHERE id_paciente = :id";
+        $evals  = "SELECT id_evaluacion FROM tbl_evaluaciones WHERE id_paciente = :id";
+        $pasos = [
+            "DELETE FROM tbl_cambios_paciente WHERE id_paciente = :id",
+            "DELETE FROM tbl_menu_alimento WHERE id_menu IN (SELECT id_menu FROM tbl_menu WHERE id_dieta IN ($dietas))",
+            "DELETE FROM tbl_menu WHERE id_dieta IN ($dietas)",
+            "DELETE FROM tbl_dietas WHERE id_paciente = :id",
+            "DELETE FROM tbl_circunferencias WHERE id_evaluacion IN ($evals)",
+            "DELETE FROM tbl_bioimpedancia WHERE id_evaluacion IN ($evals)",
+            "DELETE FROM tbl_cuestionario_habitos WHERE id_evaluacion IN ($evals)",
+            "DELETE FROM tbl_evaluaciones WHERE id_paciente = :id",
+            "DELETE FROM tbl_historial_peso WHERE id_paciente = :id",
+            "DELETE FROM tbl_preferencias_alimento WHERE id_paciente = :id",
+            "DELETE FROM tbl_paciente_patologia WHERE id_paciente = :id",
+            "UPDATE tbl_auditoria SET id_usuario = NULL WHERE id_usuario IN (SELECT id_usuario FROM tbl_usuarios WHERE id_paciente = :id AND rol = 'Paciente')",
+            "DELETE FROM tbl_usuarios WHERE id_paciente = :id AND rol = 'Paciente'",
+            "DELETE FROM tbl_pacientes WHERE id_paciente = :id",
+        ];
+        $this->db->beginTransaction();
+        try {
+            foreach ($pasos as $sql) {
+                $this->db->prepare($sql)->execute(['id' => $id]);
+            }
+            $this->db->commit();
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     public function actualizar(int $id, array $d): void
     {
         $this->db->prepare(

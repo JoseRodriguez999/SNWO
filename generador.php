@@ -22,6 +22,10 @@ $dieta      = $datos['dieta'];
 $dias       = $datos['dias'];
 $tiempos    = $datos['tiempos'];
 $error      = $datos['error'];
+$exito      = $datos['exito'];
+$hayActiva  = $datos['hayActiva'];
+$alergenosTexto     = $datos['alergenosTexto'];
+$alergenosConflicto = $datos['alergenosConflicto'];
 $csrf       = $datos['csrf'];
 
 $pageTitle = 'Generador de dietas';

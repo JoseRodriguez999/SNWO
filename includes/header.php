@@ -21,6 +21,7 @@ $navItems = [
     'personalizar' => ['label' => 'Personalizar', 'href' => 'personalizar.php', 'paciente' => true],
     'exportar'     => ['label' => 'Exportar PDF', 'href' => 'exportar.php',     'paciente' => true],
     'progreso'     => ['label' => 'Progreso',     'href' => 'progreso.php',     'paciente' => true],
+    'reportes'     => ['label' => 'Reportes',     'href' => 'reportes.php'],
     'alimentos'    => ['label' => 'Alimentos',    'href' => 'alimentos.php'],
     'usuarios'     => ['label' => 'Usuarios',     'href' => 'usuarios.php'],
 ];
@@ -73,7 +74,7 @@ if (($_SESSION['rol'] ?? '') === 'Paciente') {
       <span class="text-sm text-emerald-50 max-w-[9rem] sm:max-w-none truncate">
         <?= htmlspecialchars($_SESSION['nombre'] ?? 'Usuario', ENT_QUOTES, 'UTF-8') ?>
         <?php if (!empty($_SESSION['rol'])): ?>
-          <span class="text-emerald-200">(<?= htmlspecialchars($_SESSION['rol'], ENT_QUOTES, 'UTF-8') ?>)</span>
+          <span class="text-emerald-200">(<?= htmlspecialchars($_SESSION['rol'] === 'SuperAdmin' ? 'Super Administrador' : $_SESSION['rol'], ENT_QUOTES, 'UTF-8') ?>)</span>
         <?php endif; ?>
       </span>
       <a href="logout.php" class="text-sm bg-white/15 hover:bg-white/25 px-3 py-1.5 rounded-md transition-colors">
